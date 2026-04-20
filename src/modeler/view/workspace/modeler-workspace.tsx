@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { WorkspaceController } from '@/modeler/control/handler/workspace/workspace-controller'
+import type { TableModel } from '@/modeler/model/table/table-model'
 import { ProjectSidebar } from '@/modeler/view/panel/project-sidebar'
 import { PropertyPanel } from '@/modeler/view/panel/property-panel'
 
@@ -20,6 +22,7 @@ type ModelerWorkspaceProps = {
 
 export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspaceProps) {
   const canvasRef = useRef<HTMLDivElement | null>(null)
+  const tablesByIdRef = useRef<Map<string, TableModel>>(new Map())
 
   useEffect(() => {
     if (!canvasRef.current || process.env.NODE_ENV === 'test') {
@@ -28,6 +31,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
 
     let disposed = false
     let graphInstance: { dispose: () => void } | null = null
+    const controller = new WorkspaceController()
 
     void import('@antv/x6').then(({ Graph }) => {
       if (!canvasRef.current || disposed) {
@@ -43,6 +47,16 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         background: {
           color: '#f7f9fb',
         },
+      })
+
+      graphInstance.on?.('node:moved', ({ node }: { node: { id: string; position: () => { x: number; y: number } } }) => {
+        const table = tablesByIdRef.current.get(node.id)
+
+        if (!table) {
+          return
+        }
+
+        controller.applyNodeMoved(table, node.position())
       })
     })
 
