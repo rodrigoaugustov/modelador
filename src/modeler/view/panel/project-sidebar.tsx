@@ -6,14 +6,7 @@ export function ProjectSidebar({ project }: { project: { name: string } }) {
       <p className="modeler-panel__copy">
         Curate entities and relationships with a quiet, high-contrast workspace.
       </p>
-      <div className="modeler-toolbar">
-        <button className="modeler-toolbar__button" type="button">
-          Add table
-        </button>
-        <button className="modeler-toolbar__button modeler-toolbar__button--ghost" type="button">
-          Generate DDL
-        </button>
-      </div>
+      <p className="modeler-panel__copy">Surface hierarchy, blueprint canvas, and PostgreSQL-first modeling.</p>
     </aside>
   )
 }
