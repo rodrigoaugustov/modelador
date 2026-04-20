@@ -21,3 +21,116 @@ a {
   max-width: 48rem;
   padding: 3rem;
 }
+
+.modeler-layout {
+  display: grid;
+  grid-template-columns: 18rem 1fr 20rem;
+  min-height: 100vh;
+  background: #f7f9fb;
+}
+
+.modeler-panel {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #f0f4f7;
+}
+
+.modeler-panel--right {
+  background: #e8eff3;
+}
+
+.modeler-panel__eyebrow {
+  margin: 0;
+  color: #566166;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modeler-panel__title {
+  margin: 0;
+  color: #2a3439;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.modeler-panel__copy {
+  margin: 0;
+  color: #566166;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.modeler-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.modeler-toolbar__button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  background: linear-gradient(135deg, #0053db, #0048c1);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modeler-toolbar__button--ghost {
+  background: #dbe1ff;
+  color: #0048bf;
+}
+
+.modeler-canvas-shell {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+  padding: 1.25rem;
+  gap: 1rem;
+  background: #f7f9fb;
+}
+
+.modeler-canvas-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1.25rem;
+  background: #e8eff3;
+}
+
+.modeler-canvas-toolbar__title {
+  margin: 0;
+  color: #2a3439;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.modeler-canvas-toolbar__meta {
+  margin: 0;
+  color: #566166;
+  font-size: 0.875rem;
+}
+
+.modeler-canvas {
+  min-height: 70vh;
+  border-radius: 1.75rem;
+  background:
+    radial-gradient(circle at top left, rgba(0, 83, 219, 0.08), transparent 24rem),
+    #f7f9fb;
+}
+
+.property-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+}
