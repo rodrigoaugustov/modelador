@@ -3,11 +3,23 @@
 import { useEffect, useRef } from 'react'
 import { useMemo, useState } from 'react'
 import { createProjectLocalStore } from '@/lib/local/indexeddb-project-store'
+import { createTableNodeDefinition } from '@/modeler/control/assembler/table/table-node-factory'
 import { WorkspaceController } from '@/modeler/control/handler/workspace/workspace-controller'
-import type { TableModel } from '@/modeler/model/table/table-model'
+import { TableModel } from '@/modeler/model/table/table-model'
 import { DDLPreviewModal } from '@/modeler/view/modal/ddl-preview-modal'
 import { ProjectSidebar } from '@/modeler/view/panel/project-sidebar'
 import { PropertyPanel } from '@/modeler/view/panel/property-panel'
+
+type WorkspaceTable = {
+  id: string
+  logicalName: string
+  physicalName: string | null
+  attributes?: unknown[]
+  coordinate?: {
+    x: number
+    y: number
+  }
+}
 
 type ModelerWorkspaceProps = {
   projectId: string
@@ -17,22 +29,35 @@ type ModelerWorkspaceProps = {
       name: string
     }
     model: {
-      tables: Array<{
-        id: string
-        logicalName: string
-        physicalName: string | null
-        attributes?: unknown[]
-      }>
+      tables: WorkspaceTable[]
       relationships: unknown[]
     }
   }
 }
 
+function normalizeTables(tables: WorkspaceTable[]) {
+  return tables.map((table, index) => ({
+    ...table,
+    coordinate: table.coordinate ?? {
+      x: 64 + index * 32,
+      y: 64 + index * 24,
+    },
+  }))
+}
+
 export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspaceProps) {
   const canvasRef = useRef<HTMLDivElement | null>(null)
   const tablesByIdRef = useRef<Map<string, TableModel>>(new Map())
+  const skipNextGraphSyncRef = useRef(false)
+  const graphRef = useRef<{
+    clearCells: () => void
+    addNode: (metadata: unknown) => void
+    dispose: () => void
+    on?: (eventName: string, handler: (event: { node: { id: string; position: () => { x: number; y: number } } }) => void) => void
+  } | null>(null)
   const localStore = useMemo(() => createProjectLocalStore(), [])
-  const [tables, setTables] = useState(initialProject.model.tables)
+  const [tables, setTables] = useState(() => normalizeTables(initialProject.model.tables))
+  const [graphReady, setGraphReady] = useState(false)
   const [isAddingTable, setIsAddingTable] = useState(false)
   const [logicalTableName, setLogicalTableName] = useState('')
   const [ddl, setDdl] = useState<string | null>(null)
@@ -72,6 +97,8 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
           color: '#f7f9fb',
         },
       })
+      graphRef.current = graphInstance
+      setGraphReady(true)
 
       graphInstance.on?.('node:moved', ({ node }: { node: { id: string; position: () => { x: number; y: number } } }) => {
         const table = tablesByIdRef.current.get(node.id)
@@ -81,14 +108,55 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         }
 
         controller.applyNodeMoved(table, node.position())
+        skipNextGraphSyncRef.current = true
+        setTables((currentTables) =>
+          currentTables.map((currentTable) =>
+            currentTable.id === node.id
+              ? {
+                  ...currentTable,
+                  coordinate: node.position(),
+                }
+              : currentTable,
+          ),
+        )
       })
     })
 
     return () => {
       disposed = true
+      graphRef.current = null
+      setGraphReady(false)
       graphInstance?.dispose()
     }
   }, [])
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'test' || !graphReady || !graphRef.current) {
+      return
+    }
+
+    if (skipNextGraphSyncRef.current) {
+      skipNextGraphSyncRef.current = false
+      return
+    }
+
+    const nextTableMap = new Map<string, TableModel>()
+    graphRef.current.clearCells()
+
+    for (const table of tables) {
+      const domainTable = TableModel.create({
+        id: table.id,
+        name: table.logicalName,
+        x: table.coordinate?.x ?? 64,
+        y: table.coordinate?.y ?? 64,
+      })
+
+      graphRef.current.addNode(createTableNodeDefinition(domainTable))
+      nextTableMap.set(table.id, domainTable)
+    }
+
+    tablesByIdRef.current = nextTableMap
+  }, [graphReady, tables])
 
   async function persistSnapshot(nextSnapshot: typeof snapshot) {
     await localStore.save(projectId, nextSnapshot)
@@ -110,6 +178,10 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         logicalName: logicalTableName,
         physicalName: null,
         attributes: [],
+        coordinate: {
+          x: 64 + tables.length * 32,
+          y: 64 + tables.length * 24,
+        },
       },
     ]
 
@@ -152,15 +224,16 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
           </div>
           <p className="modeler-canvas-toolbar__meta">Forward design for PostgreSQL</p>
         </header>
-        <div ref={canvasRef} data-testid="modeler-canvas" className="modeler-canvas">
-          <div className="schema-card-layer">
-            {tables.map((table) => (
-              <article key={table.id} className="schema-card">
-                <div className="schema-card__header">{table.logicalName}</div>
-                <div className="schema-card__body">Logical table ready for PostgreSQL DDL generation.</div>
+        <div className="modeler-canvas-frame">
+          <div ref={canvasRef} data-testid="modeler-canvas" className="modeler-canvas" />
+          {tables.length === 0 ? (
+            <div className="schema-card-layer">
+              <article className="schema-card">
+                <div className="schema-card__header">Start modeling</div>
+                <div className="schema-card__body">Add your first table to populate the blueprint canvas.</div>
               </article>
-            ))}
-          </div>
+            </div>
+          ) : null}
         </div>
       </section>
         <PropertyPanel>

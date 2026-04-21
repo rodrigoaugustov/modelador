@@ -118,7 +118,7 @@ a {
   font-size: 0.875rem;
 }
 
-.modeler-canvas {
+.modeler-canvas-frame {
   position: relative;
   min-height: 70vh;
   border-radius: 1.75rem;
@@ -126,6 +126,11 @@ a {
     radial-gradient(circle at top left, rgba(0, 83, 219, 0.08), transparent 24rem),
     #f7f9fb;
   overflow: hidden;
+}
+
+.modeler-canvas {
+  width: 100%;
+  min-height: 70vh;
 }
 
 .property-card {
