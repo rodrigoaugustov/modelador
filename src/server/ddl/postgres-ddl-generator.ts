@@ -1,7 +1,10 @@
+import type { EditorProjectSnapshot } from '@/modeler/types/editor-snapshot'
 import { mapProjectToPostgresTables } from '@/server/ddl/postgres-ddl-mapper'
 import { validateProjectModel } from '@/server/validation/model-validator'
 
-export function generatePostgresDDL(snapshot: any) {
+type ValidationSnapshot = Pick<EditorProjectSnapshot, 'model'>
+
+export function generatePostgresDDL(snapshot: ValidationSnapshot) {
   const validation = validateProjectModel(snapshot)
 
   if (!validation.isValid) {
@@ -9,18 +12,20 @@ export function generatePostgresDDL(snapshot: any) {
   }
 
   return mapProjectToPostgresTables(snapshot)
-    .map((table: any) => {
-      const columns = table.columns.map((column: any) => {
+    .map((table) => {
+      const columns = table.columns.map((column) => {
         const notNullClause = column.isNullable ? '' : ' not null'
         return `  ${column.name} ${column.dataType}${notNullClause}`
       })
 
-      const primaryKeys = table.columns
-        .filter((column: any) => column.isPrimaryKey)
-        .map((column: any) => column.name)
+      if (table.primaryKeys.length > 0) {
+        columns.push(`  primary key (${table.primaryKeys.join(', ')})`)
+      }
 
-      if (primaryKeys.length > 0) {
-        columns.push(`  primary key (${primaryKeys.join(', ')})`)
+      for (const foreignKey of table.foreignKeys) {
+        columns.push(
+          `  foreign key (${foreignKey.column}) references ${foreignKey.referencesTable} (${foreignKey.referencesColumn}) on delete ${foreignKey.onDelete} on update ${foreignKey.onUpdate}`,
+        )
       }
 
       return `create table ${table.tableName} (\n${columns.join(',\n')}\n);`

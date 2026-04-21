@@ -16,7 +16,7 @@ type CreateRelationshipArgs = {
 
 export class RelationshipModel extends SVGModel {
   static create(args: CreateRelationshipArgs) {
-    return new RelationshipModel(args.id, args.primaryTable, args.secondaryTable)
+    return new RelationshipModel(args)
   }
 
   isSelected = false
@@ -27,11 +27,22 @@ export class RelationshipModel extends SVGModel {
   onUpdate: 'no action' | 'restrict' | 'cascade' | 'set null' = 'cascade'
   enforceConstraint = true
 
-  private constructor(
-    id: string,
-    public readonly primaryTable: TableModel,
-    public readonly secondaryTable: TableModel,
-  ) {
-    super(id, new Vertex(primaryTable.coordinate.x, primaryTable.coordinate.y), 'relationship-edge')
+  readonly primaryTable: TableModel
+  readonly secondaryTable: TableModel
+
+  private constructor(args: CreateRelationshipArgs) {
+    super(
+      args.id,
+      new Vertex(args.primaryTable.coordinate.x, args.primaryTable.coordinate.y),
+      'relationship-edge',
+    )
+    this.primaryTable = args.primaryTable
+    this.secondaryTable = args.secondaryTable
+    this.primaryAttributeId = args.primaryAttributeId ?? ''
+    this.secondaryAttributeId = args.secondaryAttributeId ?? ''
+    this.relationshipType = args.relationshipType ?? 'one-to-many'
+    this.onDelete = args.onDelete ?? 'cascade'
+    this.onUpdate = args.onUpdate ?? 'cascade'
+    this.enforceConstraint = args.enforceConstraint ?? true
   }
 }

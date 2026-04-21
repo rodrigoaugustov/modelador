@@ -2,13 +2,22 @@ html,
 body {
   margin: 0;
   padding: 0;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-body), sans-serif;
   background: #f8fafc;
   color: #0f172a;
 }
 
 body {
   min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display), sans-serif;
 }
 
 a {
@@ -86,6 +95,11 @@ a {
   color: #0048bf;
 }
 
+.modeler-toolbar__button--danger {
+  background: rgba(173, 52, 62, 0.12);
+  color: #8f2730;
+}
+
 .modeler-canvas-shell {
   display: grid;
   grid-template-rows: auto 1fr;
@@ -154,15 +168,18 @@ a {
   font-size: 0.875rem;
 }
 
-.property-form input {
+.property-form input,
+.property-form select {
   border: 1px solid rgba(0, 83, 219, 0.15);
   border-radius: 0.4rem;
   padding: 0.85rem 0.95rem;
   background: #ffffff;
   color: #2a3439;
+  font: inherit;
 }
 
-.property-form input:focus {
+.property-form input:focus,
+.property-form select:focus {
   outline: none;
   box-shadow: 0 0 0 4px rgba(0, 83, 219, 0.2);
 }

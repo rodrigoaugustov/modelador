@@ -23,4 +23,71 @@ describe('generatePostgresDDL', () => {
     expect(ddl).toContain('id uuid not null')
     expect(ddl).toContain('primary key (id)')
   })
+
+  it('emits foreign key constraints for enforced one-to-many relationships', () => {
+    const ddl = generatePostgresDDL({
+      model: {
+        tables: [
+          {
+            id: 'table_users',
+            logicalName: 'users',
+            physicalName: 'users',
+            attributes: [
+              {
+                id: 'attr_users_id',
+                logicalName: 'id',
+                physicalName: 'id',
+                dataType: 'uuid',
+                isNull: false,
+                isPrimaryKey: true,
+                isForeignKey: false,
+              },
+            ],
+          },
+          {
+            id: 'table_orders',
+            logicalName: 'orders',
+            physicalName: 'orders',
+            attributes: [
+              {
+                id: 'attr_orders_id',
+                logicalName: 'id',
+                physicalName: 'id',
+                dataType: 'uuid',
+                isNull: false,
+                isPrimaryKey: true,
+                isForeignKey: false,
+              },
+              {
+                id: 'attr_orders_user_id',
+                logicalName: 'user_id',
+                physicalName: 'user_id',
+                dataType: 'uuid',
+                isNull: false,
+                isPrimaryKey: false,
+                isForeignKey: true,
+              },
+            ],
+          },
+        ],
+        relationships: [
+          {
+            id: 'rel_users_orders',
+            primaryTableId: 'table_users',
+            secondaryTableId: 'table_orders',
+            primaryAttributeId: 'attr_users_id',
+            secondaryAttributeId: 'attr_orders_user_id',
+            relationshipType: 'one-to-many',
+            onDelete: 'cascade',
+            onUpdate: 'cascade',
+            enforceConstraint: true,
+          },
+        ],
+      },
+    })
+
+    expect(ddl).toContain('foreign key (user_id) references users (id)')
+    expect(ddl).toContain('on delete cascade')
+    expect(ddl).toContain('on update cascade')
+  })
 })

@@ -21,8 +21,29 @@ test('user creates a project, edits a model, saves, reopens, and generates ddl',
   await page.reload()
   await expect(page.getByTestId('modeler-canvas').getByText(/email/i)).toBeVisible()
 
+  await page.getByRole('button', { name: /add table/i }).click()
+  await page.getByLabel('Table Name').fill('orders')
+  await page.getByRole('button', { name: /create table/i }).click()
+  await expect(page.getByTestId('modeler-canvas').getByText(/orders/i)).toBeVisible()
+
+  await page.getByRole('button', { name: /edit attributes/i }).click()
+  await page.getByRole('button', { name: /add column/i }).click()
+  await page.getByLabel('Column name').last().fill('user_id')
+  await page.getByLabel('Data type').last().fill('uuid')
+  await page.getByRole('button', { name: /apply schema changes/i }).click()
+  await expect(page.getByTestId('modeler-canvas').getByText(/user_id/i)).toBeVisible()
+
+  await page.getByRole('button', { name: /configure relationship/i }).click()
+  await page.getByLabel('Primary table').selectOption({ label: 'users' })
+  await page.getByLabel('Secondary table').selectOption({ label: 'orders' })
+  await page.getByLabel('Primary attribute').selectOption({ label: 'users.id' })
+  await page.getByLabel('Secondary attribute').selectOption({ label: 'orders.user_id' })
+  await page.getByRole('button', { name: /create relationship/i }).click()
+  await expect.poll(async () => page.evaluate(() => document.querySelectorAll('.x6-edge').length)).toBe(1)
+
   const node = page.locator('.x6-node').first()
   const box = await node.boundingBox()
+  const nodeCountBeforeDrag = await page.evaluate(() => document.querySelectorAll('.x6-node').length)
 
   if (!box) {
     throw new Error('Expected the created table to have a bounding box')
@@ -35,9 +56,10 @@ test('user creates a project, edits a model, saves, reopens, and generates ddl',
   await page.waitForTimeout(300)
   await expect
     .poll(async () => page.evaluate(() => document.querySelectorAll('.x6-node').length))
-    .toBe(1)
+    .toBe(nodeCountBeforeDrag)
 
   await page.getByRole('button', { name: /generate ddl/i }).click()
 
   await expect(page.getByText(/create table users/i)).toBeVisible()
+  await expect(page.getByText(/foreign key \(user_id\) references users \(id\)/i)).toBeVisible()
 })

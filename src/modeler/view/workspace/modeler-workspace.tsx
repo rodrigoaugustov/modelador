@@ -3,14 +3,22 @@
 import { useEffect, useRef } from 'react'
 import { useMemo, useState } from 'react'
 import { createProjectLocalStore } from '@/lib/local/indexeddb-project-store'
+import { createRelationshipEdgeDefinition } from '@/modeler/control/assembler/relationship/relationship-edge-factory'
 import { createTableNodeDefinition } from '@/modeler/control/assembler/table/table-node-factory'
+import { ConfigureRelationshipFormHandler } from '@/modeler/control/handler/form/relationship/configure-relationship-form-handler'
 import { CreateTableFormHandler } from '@/modeler/control/handler/form/table/create-table-form-handler'
 import { EditAttributesFormHandler } from '@/modeler/control/handler/form/table/edit-attributes-form-handler'
 import { TableSelectionController } from '@/modeler/control/handler/table/table-selection-controller'
 import { WorkspaceController } from '@/modeler/control/handler/workspace/workspace-controller'
+import { RelationshipModel } from '@/modeler/model/relationship/relationship-model'
 import { TableModel } from '@/modeler/model/table/table-model'
 import { TableAttributeText } from '@/modeler/model/table/text/table-attribute-text'
-import type { EditorProjectSnapshot, EditorTableSnapshot } from '@/modeler/types/editor-snapshot'
+import type {
+  EditorProjectSnapshot,
+  EditorRelationshipSnapshot,
+  EditorTableSnapshot,
+} from '@/modeler/types/editor-snapshot'
+import { ConfigureRelationshipModal } from '@/modeler/view/modal/configure-relationship-modal'
 import { CreateTableModal } from '@/modeler/view/modal/create-table-modal'
 import { DDLPreviewModal } from '@/modeler/view/modal/ddl-preview-modal'
 import { EditAttributesModal } from '@/modeler/view/modal/edit-attributes-modal'
@@ -22,15 +30,50 @@ type ModelerWorkspaceProps = {
   initialProject: EditorProjectSnapshot
 }
 
+function getDefaultTableCoordinate(index: number) {
+  return {
+    x: 72 + (index % 3) * 320,
+    y: 72 + Math.floor(index / 3) * 220,
+  }
+}
+
 function normalizeTables(tables: EditorTableSnapshot[]) {
   return tables.map((table, index) => ({
     ...table,
-    coordinate: table.coordinate ?? {
-      x: 64 + index * 32,
-      y: 64 + index * 24,
-    },
+    coordinate: table.coordinate ?? getDefaultTableCoordinate(index),
     attributes: table.attributes ?? [],
   }))
+}
+
+function synchronizeForeignKeyFlags(
+  tables: EditorTableSnapshot[],
+  relationships: EditorRelationshipSnapshot[],
+) {
+  const foreignKeyAttributeIds = new Set(relationships.map((relationship) => relationship.secondaryAttributeId))
+
+  return tables.map((table) => ({
+    ...table,
+    attributes: table.attributes.map((attribute) => ({
+      ...attribute,
+      isForeignKey: foreignKeyAttributeIds.has(attribute.id),
+    })),
+  }))
+}
+
+function pruneRelationships(
+  tables: EditorTableSnapshot[],
+  relationships: EditorRelationshipSnapshot[],
+) {
+  const tableIds = new Set(tables.map((table) => table.id))
+  const attributeIds = new Set(tables.flatMap((table) => table.attributes.map((attribute) => attribute.id)))
+
+  return relationships.filter(
+    (relationship) =>
+      tableIds.has(relationship.primaryTableId) &&
+      tableIds.has(relationship.secondaryTableId) &&
+      attributeIds.has(relationship.primaryAttributeId) &&
+      attributeIds.has(relationship.secondaryAttributeId),
+  )
 }
 
 function applyAttributeSnapshot(table: TableModel, attribute: EditorTableSnapshot['attributes'][number]) {
@@ -71,26 +114,61 @@ function hydrateDomainTable(table: EditorTableSnapshot) {
   return domainTable
 }
 
+function hydrateRelationship(
+  relationship: EditorRelationshipSnapshot,
+  tablesById: Map<string, TableModel>,
+) {
+  const primaryTable = tablesById.get(relationship.primaryTableId)
+  const secondaryTable = tablesById.get(relationship.secondaryTableId)
+
+  if (!primaryTable || !secondaryTable) {
+    return null
+  }
+
+  primaryTable.relationshipAsPrimaryTableList.set(relationship.id, secondaryTable.identification)
+  secondaryTable.relationshipAsSecondaryTableList.set(relationship.id, primaryTable.identification)
+
+  return RelationshipModel.create({
+    id: relationship.id,
+    primaryTable,
+    secondaryTable,
+    primaryAttributeId: relationship.primaryAttributeId,
+    secondaryAttributeId: relationship.secondaryAttributeId,
+    relationshipType: relationship.relationshipType,
+    onDelete: relationship.onDelete,
+    onUpdate: relationship.onUpdate,
+    enforceConstraint: relationship.enforceConstraint,
+  })
+}
+
 export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspaceProps) {
   const canvasRef = useRef<HTMLDivElement | null>(null)
   const tablesByIdRef = useRef<Map<string, TableModel>>(new Map())
   const skipNextGraphSyncRef = useRef(false)
   const graphRef = useRef<{
+    resetCells: (cells: unknown[]) => void
     clearCells: () => void
     addNode: (metadata: unknown) => void
+    addEdge: (metadata: unknown) => void
+    createNode: (metadata: unknown) => unknown
+    createEdge: (metadata: unknown) => unknown
     dispose: () => void
     on?: (eventName: string, handler: (event: { node: { id: string; position: () => { x: number; y: number } } }) => void) => void
   } | null>(null)
   const localStore = useMemo(() => createProjectLocalStore(), [])
   const createTableFormHandler = useMemo(() => new CreateTableFormHandler(), [])
+  const configureRelationshipFormHandler = useMemo(() => new ConfigureRelationshipFormHandler(), [])
   const editAttributesFormHandler = useMemo(() => new EditAttributesFormHandler(), [])
   const [tables, setTables] = useState(() => normalizeTables(initialProject.model.tables))
+  const [relationships, setRelationships] = useState(() => initialProject.model.relationships ?? [])
   const [graphReady, setGraphReady] = useState(false)
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
   const [isAddingTable, setIsAddingTable] = useState(false)
   const [isEditingAttributes, setIsEditingAttributes] = useState(false)
+  const [isConfiguringRelationship, setIsConfiguringRelationship] = useState(false)
   const [tableDraft, setTableDraft] = useState<Omit<EditorTableSnapshot, 'id' | 'coordinate'> | null>(null)
   const [attributeDraftTable, setAttributeDraftTable] = useState<EditorTableSnapshot | null>(null)
+  const [relationshipDraft, setRelationshipDraft] = useState<EditorRelationshipSnapshot | null>(null)
   const [ddl, setDdl] = useState<string | null>(null)
   const selectedTable = tables.find((table) => table.id === selectedTableId) ?? null
 
@@ -100,9 +178,10 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
       model: {
         ...initialProject.model,
         tables,
+        relationships,
       },
     }),
-    [initialProject, tables],
+    [initialProject, relationships, tables],
   )
 
   useEffect(() => {
@@ -111,7 +190,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     }
 
     let disposed = false
-    let graphInstance: { dispose: () => void } | null = null
+    let graphInstance: typeof graphRef.current = null
     const controller = new WorkspaceController()
     const selectionController = new TableSelectionController()
 
@@ -186,7 +265,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     }
 
     const nextTableMap = new Map<string, TableModel>()
-    graphRef.current.clearCells()
+    const cells: unknown[] = []
 
     for (const table of tables) {
       const domainTable = hydrateDomainTable({
@@ -194,12 +273,23 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         coordinate: table.coordinate ?? { x: 64, y: 64 },
       })
 
-      graphRef.current.addNode(createTableNodeDefinition(domainTable))
+      cells.push(graphRef.current.createNode(createTableNodeDefinition(domainTable)))
       nextTableMap.set(table.id, domainTable)
     }
 
+    for (const relationship of relationships) {
+      const domainRelationship = hydrateRelationship(relationship, nextTableMap)
+
+      if (!domainRelationship) {
+        continue
+      }
+
+      cells.push(graphRef.current.createEdge(createRelationshipEdgeDefinition(domainRelationship)))
+    }
+
+    graphRef.current.resetCells(cells)
     tablesByIdRef.current = nextTableMap
-  }, [graphReady, tables])
+  }, [graphReady, relationships, tables])
 
   async function persistSnapshot(nextSnapshot: typeof snapshot) {
     await localStore.save(projectId, nextSnapshot)
@@ -230,10 +320,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
           ...attribute,
           id: `${tableId}_attr_${index}`,
         })),
-        coordinate: {
-          x: 64 + tables.length * 32,
-          y: 64 + tables.length * 24,
-        },
+        coordinate: getDefaultTableCoordinate(tables.length),
       },
     ]
 
@@ -271,18 +358,74 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     }
 
     const nextTables = tables.map((table) => (table.id === attributeDraftTable.id ? attributeDraftTable : table))
+    const nextRelationships = pruneRelationships(nextTables, relationships)
+    const nextTablesWithFlags = synchronizeForeignKeyFlags(nextTables, nextRelationships)
+    const nextSnapshot = {
+      ...snapshot,
+      model: {
+        ...snapshot.model,
+        tables: nextTablesWithFlags,
+        relationships: nextRelationships,
+      },
+    }
+
+    await persistSnapshot(nextSnapshot)
+    setTables(nextTablesWithFlags)
+    setRelationships(nextRelationships)
+    setIsEditingAttributes(false)
+    setAttributeDraftTable(null)
+  }
+
+  async function handleCreateRelationship() {
+    if (!relationshipDraft) {
+      return
+    }
+
+    const nextRelationships = [...relationships, relationshipDraft]
+    const nextTables = synchronizeForeignKeyFlags(tables, nextRelationships)
     const nextSnapshot = {
       ...snapshot,
       model: {
         ...snapshot.model,
         tables: nextTables,
+        relationships: nextRelationships,
       },
     }
 
     await persistSnapshot(nextSnapshot)
     setTables(nextTables)
-    setIsEditingAttributes(false)
-    setAttributeDraftTable(null)
+    setRelationships(nextRelationships)
+    setIsConfiguringRelationship(false)
+    setRelationshipDraft(null)
+  }
+
+  async function handleDeleteSelectedTable() {
+    if (!selectedTable) {
+      return
+    }
+
+    const nextTables = tables.filter((table) => table.id !== selectedTable.id)
+    const nextRelationships = pruneRelationships(
+      nextTables,
+      relationships.filter(
+        (relationship) =>
+          relationship.primaryTableId !== selectedTable.id && relationship.secondaryTableId !== selectedTable.id,
+      ),
+    )
+    const nextTablesWithFlags = synchronizeForeignKeyFlags(nextTables, nextRelationships)
+    const nextSnapshot = {
+      ...snapshot,
+      model: {
+        ...snapshot.model,
+        tables: nextTablesWithFlags,
+        relationships: nextRelationships,
+      },
+    }
+
+    await persistSnapshot(nextSnapshot)
+    setTables(nextTablesWithFlags)
+    setRelationships(nextRelationships)
+    setSelectedTableId(nextTablesWithFlags.at(-1)?.id ?? null)
   }
 
   return (
@@ -357,6 +500,30 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
                 Edit attributes
               </button>
             ) : null}
+            {tables.length >= 2 ? (
+              <button
+                className="modeler-toolbar__button modeler-toolbar__button--ghost"
+                type="button"
+                onClick={() => {
+                  const orderedTables = selectedTable
+                    ? [selectedTable, ...tables.filter((table) => table.id !== selectedTable.id)]
+                    : tables
+                  setRelationshipDraft(configureRelationshipFormHandler.createDraftFromTables(orderedTables))
+                  setIsConfiguringRelationship(true)
+                }}
+              >
+                Configure relationship
+              </button>
+            ) : null}
+            {selectedTable ? (
+              <button
+                className="modeler-toolbar__button modeler-toolbar__button--danger"
+                type="button"
+                onClick={() => void handleDeleteSelectedTable()}
+              >
+                Delete table
+              </button>
+            ) : null}
             <button className="modeler-toolbar__button modeler-toolbar__button--ghost" type="button" onClick={() => void handleGenerateDDL()}>
               Generate DDL
             </button>
@@ -403,6 +570,18 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
             )
           }
           onApply={() => void handleApplyAttributeChanges()}
+        />
+      ) : null}
+      {isConfiguringRelationship && relationshipDraft ? (
+        <ConfigureRelationshipModal
+          draft={relationshipDraft}
+          tables={tables}
+          onClose={() => {
+            setIsConfiguringRelationship(false)
+            setRelationshipDraft(null)
+          }}
+          onChange={setRelationshipDraft}
+          onSubmit={() => void handleCreateRelationship()}
         />
       ) : null}
       {ddl ? <DDLPreviewModal ddl={ddl} onClose={() => setDdl(null)} /> : null}
