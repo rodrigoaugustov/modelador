@@ -1,11 +1,11 @@
 export const postgresDataTypes = [
-  { code: 'uuid', label: 'UUID', supportsSize: false },
-  { code: 'varchar', label: 'VARCHAR', supportsSize: true },
-  { code: 'numeric', label: 'NUMERIC', supportsSize: true },
-  { code: 'text', label: 'TEXT', supportsSize: false },
-  { code: 'integer', label: 'INTEGER', supportsSize: false },
-  { code: 'bigint', label: 'BIGINT', supportsSize: false },
-  { code: 'boolean', label: 'BOOLEAN', supportsSize: false },
+  { code: 'uuid', label: 'UUID', supportsSize: false, aliases: [] },
+  { code: 'varchar', label: 'VARCHAR', supportsSize: true, aliases: ['character varying'] },
+  { code: 'numeric', label: 'NUMERIC', supportsSize: true, aliases: ['decimal', 'dec'] },
+  { code: 'text', label: 'TEXT', supportsSize: false, aliases: [] },
+  { code: 'integer', label: 'INTEGER', supportsSize: false, aliases: ['int', 'int4'] },
+  { code: 'bigint', label: 'BIGINT', supportsSize: false, aliases: ['int8'] },
+  { code: 'boolean', label: 'BOOLEAN', supportsSize: false, aliases: ['bool'] },
 ] as const
 
 export function findPostgresDataType(code: string | null | undefined) {
@@ -13,7 +13,13 @@ export function findPostgresDataType(code: string | null | undefined) {
     return null
   }
 
-  return postgresDataTypes.find((dataType) => dataType.code === code.toLowerCase()) ?? null
+  const normalizedCode = code.toLowerCase()
+
+  return (
+    postgresDataTypes.find(
+      (dataType) => dataType.code === normalizedCode || dataType.aliases.includes(normalizedCode),
+    ) ?? null
+  )
 }
 
 export function isSupportedPostgresDataType(code: string | null | undefined) {

@@ -60,4 +60,26 @@ describe('RelationshipModel', () => {
     expect(relationship.segmentList.length).toBeGreaterThan(0)
     expect(relationship.segmentList[0]?.label).toBe('1:N')
   })
+
+  it('stores line style and manual vertices for later edge routing', () => {
+    const source = TableModel.create({ id: 'table_users', name: 'users', x: 0, y: 0 })
+    const target = TableModel.create({ id: 'table_orders', name: 'orders', x: 200, y: 0 })
+
+    const relationship = RelationshipModel.create({
+      id: 'rel_users_orders',
+      primaryTable: source,
+      secondaryTable: target,
+      lineStyle: 'curved',
+      vertices: [
+        { x: 96, y: 32 },
+        { x: 156, y: 96 },
+      ],
+    })
+
+    expect(relationship.lineStyle).toBe('curved')
+    expect(relationship.vertices).toEqual([
+      { x: 96, y: 32 },
+      { x: 156, y: 96 },
+    ])
+  })
 })

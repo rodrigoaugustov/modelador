@@ -8,6 +8,24 @@ type ValidationResult = {
 
 type ValidationSnapshot = Pick<EditorProjectSnapshot, 'model'>
 
+function resolveTableName(table: ValidationSnapshot['model']['tables'][number] | undefined) {
+  return table?.physicalName ?? table?.logicalName ?? table?.id ?? 'unknown table'
+}
+
+function resolveQualifiedTableName(table: ValidationSnapshot['model']['tables'][number] | undefined) {
+  const tableName = resolveTableName(table)
+  const schema = table?.schema?.trim() ? table.schema : 'public'
+  return `${schema}.${tableName}`
+}
+
+function resolveAttributeName(
+  attribute:
+    | ValidationSnapshot['model']['tables'][number]['attributes'][number]
+    | undefined,
+) {
+  return attribute?.physicalName ?? attribute?.logicalName ?? attribute?.id ?? 'unknown column'
+}
+
 export function validateProjectModel(snapshot: ValidationSnapshot): ValidationResult {
   const errors: string[] = []
   const seenTableNames = new Set<string>()
@@ -57,6 +75,9 @@ export function validateProjectModel(snapshot: ValidationSnapshot): ValidationRe
   }
 
   for (const relationship of snapshot.model.relationships) {
+    const primaryTable = tablesById.get(relationship.primaryTableId)
+    const secondaryTable = tablesById.get(relationship.secondaryTableId)
+
     if (!tableIds.has(relationship.primaryTableId) || !tableIds.has(relationship.secondaryTableId)) {
       errors.push(`Relationship ${relationship.id} references an unknown table`)
       continue
@@ -64,29 +85,64 @@ export function validateProjectModel(snapshot: ValidationSnapshot): ValidationRe
 
     const primaryAttributes = attributeIdsByTable.get(relationship.primaryTableId)
     const secondaryAttributes = attributeIdsByTable.get(relationship.secondaryTableId)
+    const primaryPkIds = new Set(
+      (primaryTable?.attributes ?? []).filter((attribute) => attribute.isPrimaryKey).map((attribute) => attribute.id),
+    )
+    const mappedPrimaryIds = new Set<string>()
 
-    if (!primaryAttributes?.has(relationship.primaryAttributeId)) {
-      errors.push(`Relationship ${relationship.id} references an unknown primary attribute`)
-    }
-
-    if (!secondaryAttributes?.has(relationship.secondaryAttributeId)) {
-      errors.push(`Relationship ${relationship.id} references an unknown secondary attribute`)
-    }
-
-    if (!relationship.enforceConstraint) {
+    if (!relationship.attributeMappings?.length) {
+      errors.push(`Relationship ${relationship.id} must define at least one attribute mapping`)
       continue
     }
 
-    const primaryAttribute = attributesByTable.get(relationship.primaryTableId)?.get(relationship.primaryAttributeId)
-    const primaryTable = tablesById.get(relationship.primaryTableId)
+    for (const mapping of relationship.attributeMappings) {
+      const primaryAttribute = attributesByTable.get(relationship.primaryTableId)?.get(mapping.primaryAttributeId)
+      const secondaryAttribute = attributesByTable.get(relationship.secondaryTableId)?.get(mapping.secondaryAttributeId)
+      const relationshipLabel = `${resolveTableName(primaryTable)}.${resolveAttributeName(primaryAttribute)} -> ${resolveTableName(secondaryTable)}.${resolveAttributeName(secondaryAttribute)}`
+
+      if (!primaryAttributes?.has(mapping.primaryAttributeId)) {
+        errors.push(`Relationship ${relationshipLabel} references an unknown primary attribute`)
+        continue
+      }
+
+      if (!secondaryAttributes?.has(mapping.secondaryAttributeId)) {
+        errors.push(`Relationship ${relationshipLabel} references an unknown secondary attribute`)
+        continue
+      }
+
+      mappedPrimaryIds.add(mapping.primaryAttributeId)
+
+      if (
+        relationship.enforceConstraint &&
+        relationship.relationshipType !== 'many-to-many' &&
+        primaryAttribute &&
+        !primaryAttribute.isPrimaryKey
+      ) {
+        errors.push(`Relationship ${relationshipLabel} must reference a primary key parent column`)
+      }
+    }
 
     if (
-      primaryTable &&
-      primaryAttribute &&
+      relationship.enforceConstraint &&
       relationship.relationshipType !== 'many-to-many' &&
-      !primaryAttribute.isPrimaryKey
+      primaryPkIds.size > 1 &&
+      mappedPrimaryIds.size !== primaryPkIds.size
     ) {
-      errors.push(`Relationship ${relationship.id} must reference a primary key or unique parent column`)
+      errors.push(
+        `Relationship ${resolveQualifiedTableName(primaryTable)} must map all parent primary key columns when enforcing a composite key constraint`,
+      )
+      continue
+    }
+
+    if (
+      relationship.enforceConstraint &&
+      relationship.relationshipType !== 'many-to-many' &&
+      primaryPkIds.size > 1 &&
+      Array.from(primaryPkIds).some((primaryKeyId) => !mappedPrimaryIds.has(primaryKeyId))
+    ) {
+      errors.push(
+        `Relationship ${resolveQualifiedTableName(primaryTable)} must map all parent primary key columns when enforcing a composite key constraint`,
+      )
     }
   }
 

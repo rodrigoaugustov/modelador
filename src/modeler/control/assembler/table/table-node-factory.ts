@@ -40,20 +40,52 @@ export function createTableNodeDefinition(table: TableModel, viewMode: ViewMode)
     attrs: {
       body: {
         fill: '#ffffff',
-        stroke: 'rgba(169, 180, 185, 0.15)',
-        strokeWidth: 1,
+        stroke: table.isSelected ? '#0053db' : 'rgba(169, 180, 185, 0.15)',
+        strokeWidth: table.isSelected ? 2 : 1,
         rx: 18,
         ry: 18,
       },
       label: {
         text: [resolveName(table.tableName.logicalName, table.tableName.physicalName, viewMode), ...lines].join('\n'),
-        fill: '#2a3439',
+        fill: table.isSelected ? '#0f4bb8' : '#2a3439',
         fontSize: 14,
         fontWeight: 600,
         textAnchor: 'start',
         refX: 20,
         refY: 28,
       },
+    },
+    ports: {
+      groups: {
+        in: {
+          position: 'left',
+          attrs: {
+            circle: {
+              r: 7,
+              magnet: true,
+              fill: '#ffffff',
+              stroke: '#0053db',
+              strokeWidth: 2,
+            },
+          },
+        },
+        out: {
+          position: 'right',
+          attrs: {
+            circle: {
+              r: 7,
+              magnet: true,
+              fill: '#ffffff',
+              stroke: '#0053db',
+              strokeWidth: 2,
+            },
+          },
+        },
+      },
+      items: [
+        { id: `${table.identification}__in`, group: 'in' },
+        { id: `${table.identification}__out`, group: 'out' },
+      ],
     },
   }
 }

@@ -1,9 +1,12 @@
+import type { RelationshipLineStyle } from '@/modeler/enum/relationship-line-style'
+
 export type EditorAttributeSnapshot = {
   id: string
   logicalName: string
   physicalName: string | null
   dataType: string | null
   size: string | null
+  displayOrder: number
   isNull: boolean
   isPrimaryKey: boolean
   isForeignKey: boolean
@@ -21,16 +24,25 @@ export type EditorTableSnapshot = {
   attributes: EditorAttributeSnapshot[]
 }
 
+export type EditorRelationshipAttributeMapping = {
+  id: string
+  primaryAttributeId: string
+  secondaryAttributeId: string
+}
+
 export type EditorRelationshipSnapshot = {
   id: string
   primaryTableId: string
   secondaryTableId: string
-  primaryAttributeId: string
-  secondaryAttributeId: string
+  attributeMappings: EditorRelationshipAttributeMapping[]
   relationshipType: 'one-to-one' | 'one-to-many' | 'many-to-many'
   onDelete: 'no action' | 'restrict' | 'cascade' | 'set null'
   onUpdate: 'no action' | 'restrict' | 'cascade' | 'set null'
   enforceConstraint: boolean
+  lineStyle?: RelationshipLineStyle
+  vertices?: Array<{ x: number; y: number }>
+  primaryAttributeId?: string
+  secondaryAttributeId?: string
 }
 
 export type EditorProjectSnapshot = {

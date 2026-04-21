@@ -8,6 +8,7 @@ export class CreateTableFormHandler {
       physicalName: 'id',
       dataType: 'uuid',
       size: null,
+      displayOrder: 0,
       isNull: false,
       isPrimaryKey: true,
       isForeignKey: false,

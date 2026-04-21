@@ -1,6 +1,7 @@
 'use client'
 
 import { EditAttributesFormHandler } from '@/modeler/control/handler/form/table/edit-attributes-form-handler'
+import { ReorderAttributesFormHandler } from '@/modeler/control/handler/form/table/reorder-attributes-form-handler'
 import type { EditorTableSnapshot } from '@/modeler/types/editor-snapshot'
 
 export function EditAttributesModal({
@@ -19,6 +20,8 @@ export function EditAttributesModal({
   onApply: () => void
 }) {
   const editAttributesFormHandler = new EditAttributesFormHandler()
+  const reorderAttributesFormHandler = new ReorderAttributesFormHandler()
+  const orderedAttributes = [...table.attributes].sort((left, right) => left.displayOrder - right.displayOrder)
 
   return (
     <div className="dialog-scrim">
@@ -32,7 +35,7 @@ export function EditAttributesModal({
           </button>
         </div>
 
-        {table.attributes.map((attribute, index) => (
+        {orderedAttributes.map((attribute, index) => (
           <div key={attribute.id} className="table-modal-row">
             <label htmlFor={`attribute-name-${index}`}>Column name</label>
             <input
@@ -142,9 +145,27 @@ export function EditAttributesModal({
 
             <label>
               <input
+                aria-label="Primary key"
+                type="checkbox"
+                checked={attribute.isPrimaryKey}
+                onChange={(event) =>
+                  onChange({
+                    ...table,
+                    attributes: editAttributesFormHandler.updateAttribute(table.attributes, attribute.id, {
+                      isPrimaryKey: event.target.checked,
+                    }),
+                  })
+                }
+              />
+              Primary key
+            </label>
+
+            <label>
+              <input
                 aria-label="Not null"
                 type="checkbox"
                 checked={!attribute.isNull}
+                disabled={attribute.isPrimaryKey}
                 onChange={(event) =>
                   onChange({
                     ...table,
@@ -156,6 +177,34 @@ export function EditAttributesModal({
               />
               Not null
             </label>
+
+            <button
+              className="modeler-toolbar__button modeler-toolbar__button--ghost"
+              type="button"
+              aria-label={`Move ${attribute.logicalName || 'attribute'} up`}
+              onClick={() =>
+                onChange({
+                  ...table,
+                  attributes: reorderAttributesFormHandler.moveUp(table.attributes, attribute.id),
+                })
+              }
+            >
+              Move up
+            </button>
+
+            <button
+              className="modeler-toolbar__button modeler-toolbar__button--ghost"
+              type="button"
+              aria-label={`Move ${attribute.logicalName || 'attribute'} down`}
+              onClick={() =>
+                onChange({
+                  ...table,
+                  attributes: reorderAttributesFormHandler.moveDown(table.attributes, attribute.id),
+                })
+              }
+            >
+              Move down
+            </button>
 
             <button
               className="modeler-toolbar__button modeler-toolbar__button--ghost"

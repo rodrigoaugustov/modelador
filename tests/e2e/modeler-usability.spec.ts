@@ -35,6 +35,7 @@ async function createRelationship(
     secondaryAttribute: string
   },
 ) {
+  const relationshipDialog = page.locator('[aria-label="Configure relationship dialog"]')
   const configureRelationshipButton = page.getByRole('button', { name: /configure relationship/i })
 
   if (!(await configureRelationshipButton.isVisible())) {
@@ -46,8 +47,8 @@ async function createRelationship(
   await page.getByLabel('Secondary table').selectOption({ label: input.secondaryTable })
   await page.getByLabel('Primary attribute').selectOption({ label: input.primaryAttribute })
   await page.getByLabel('Secondary attribute').selectOption({ label: input.secondaryAttribute })
-  await page.getByRole('button', { name: /create relationship/i }).click()
-  await expect(page.locator('[aria-label="Configure relationship dialog"]')).toHaveCount(0)
+  await relationshipDialog.getByRole('button', { name: /create relationship/i }).click()
+  await expect(relationshipDialog).toHaveCount(0)
 }
 
 test('user completes the live usability flow across tables, attributes, relationships, drag, and deletion', async ({
