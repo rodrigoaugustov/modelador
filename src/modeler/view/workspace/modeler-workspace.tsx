@@ -4,11 +4,13 @@ import { useEffect, useRef } from 'react'
 import { useMemo, useState } from 'react'
 import { createProjectLocalStore } from '@/lib/local/indexeddb-project-store'
 import { createTableNodeDefinition } from '@/modeler/control/assembler/table/table-node-factory'
+import { CreateTableFormHandler } from '@/modeler/control/handler/form/table/create-table-form-handler'
 import { TableSelectionController } from '@/modeler/control/handler/table/table-selection-controller'
 import { WorkspaceController } from '@/modeler/control/handler/workspace/workspace-controller'
 import { TableModel } from '@/modeler/model/table/table-model'
 import { TableAttributeText } from '@/modeler/model/table/text/table-attribute-text'
 import type { EditorProjectSnapshot, EditorTableSnapshot } from '@/modeler/types/editor-snapshot'
+import { CreateTableModal } from '@/modeler/view/modal/create-table-modal'
 import { DDLPreviewModal } from '@/modeler/view/modal/ddl-preview-modal'
 import { ProjectSidebar } from '@/modeler/view/panel/project-sidebar'
 import { PropertyPanel } from '@/modeler/view/panel/property-panel'
@@ -78,11 +80,12 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     on?: (eventName: string, handler: (event: { node: { id: string; position: () => { x: number; y: number } } }) => void) => void
   } | null>(null)
   const localStore = useMemo(() => createProjectLocalStore(), [])
+  const createTableFormHandler = useMemo(() => new CreateTableFormHandler(), [])
   const [tables, setTables] = useState(() => normalizeTables(initialProject.model.tables))
   const [graphReady, setGraphReady] = useState(false)
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
   const [isAddingTable, setIsAddingTable] = useState(false)
-  const [logicalTableName, setLogicalTableName] = useState('')
+  const [tableDraft, setTableDraft] = useState<Omit<EditorTableSnapshot, 'id' | 'coordinate'> | null>(null)
   const [ddl, setDdl] = useState<string | null>(null)
 
   const snapshot = useMemo(
@@ -205,13 +208,22 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   }
 
   async function handleSaveTable() {
+    if (!tableDraft) {
+      return
+    }
+
+    const tableId = `table_${crypto.randomUUID()}`
     const nextTables = [
       ...tables,
       {
-        id: `table_${crypto.randomUUID()}`,
-        logicalName: logicalTableName,
-        physicalName: null,
-        attributes: [],
+        id: tableId,
+        logicalName: tableDraft.logicalName,
+        physicalName: tableDraft.physicalName,
+        schema: tableDraft.schema,
+        attributes: tableDraft.attributes.map((attribute, index) => ({
+          ...attribute,
+          id: `${tableId}_attr_${index}`,
+        })),
         coordinate: {
           x: 64 + tables.length * 32,
           y: 64 + tables.length * 24,
@@ -228,8 +240,9 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     }
 
     setTables(nextTables)
-    setLogicalTableName('')
     setIsAddingTable(false)
+    setTableDraft(null)
+    setSelectedTableId(tableId)
     await persistSnapshot(nextSnapshot)
   }
 
@@ -292,44 +305,37 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         </div>
       </section>
         <PropertyPanel title={selectedTableId ? 'Table Properties' : 'Selection'}>
-          {isAddingTable ? (
-            <form
-              className="property-form"
-              onSubmit={(event) => {
-                event.preventDefault()
-                void handleSaveTable()
+          <p className="modeler-panel__copy">
+            Select a table or relationship to edit its metadata, naming, and PostgreSQL details.
+          </p>
+          <div className="modeler-toolbar">
+            <button
+              className="modeler-toolbar__button"
+              type="button"
+              onClick={() => {
+                setTableDraft(createTableFormHandler.createDraft())
+                setIsAddingTable(true)
               }}
             >
-              <label htmlFor="logical-table-name">Logical table name</label>
-              <input
-                id="logical-table-name"
-                name="logical-table-name"
-                value={logicalTableName}
-                onChange={(event) => setLogicalTableName(event.target.value)}
-              />
-              <div className="modeler-toolbar">
-                <button className="modeler-toolbar__button" type="submit">
-                  Save table
-                </button>
-              </div>
-            </form>
-          ) : (
-            <>
-              <p className="modeler-panel__copy">
-                Select a table or relationship to edit its metadata, naming, and PostgreSQL details.
-              </p>
-              <div className="modeler-toolbar">
-                <button className="modeler-toolbar__button" type="button" onClick={() => setIsAddingTable(true)}>
-                  Add table
-                </button>
-                <button className="modeler-toolbar__button modeler-toolbar__button--ghost" type="button" onClick={() => void handleGenerateDDL()}>
-                  Generate DDL
-                </button>
-              </div>
-            </>
-          )}
+              Add table
+            </button>
+            <button className="modeler-toolbar__button modeler-toolbar__button--ghost" type="button" onClick={() => void handleGenerateDDL()}>
+              Generate DDL
+            </button>
+          </div>
         </PropertyPanel>
       </div>
+      {isAddingTable && tableDraft ? (
+        <CreateTableModal
+          draft={tableDraft}
+          onClose={() => {
+            setIsAddingTable(false)
+            setTableDraft(null)
+          }}
+          onChange={setTableDraft}
+          onSubmit={() => void handleSaveTable()}
+        />
+      ) : null}
       {ddl ? <DDLPreviewModal ddl={ddl} onClose={() => setDdl(null)} /> : null}
     </>
   )

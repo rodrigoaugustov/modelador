@@ -7,8 +7,10 @@ test('user creates a project, edits a model, saves, reopens, and generates ddl',
   await page.getByRole('button', { name: /create/i }).click()
 
   await page.getByRole('button', { name: /add table/i }).click()
-  await page.getByLabel('Logical table name').fill('users')
-  await page.getByRole('button', { name: /save table/i }).click()
+  await expect(page.getByRole('heading', { name: /create new table/i })).toBeVisible()
+  await expect(page.getByLabel('Column name').first()).toHaveValue('id')
+  await page.getByLabel('Table Name').fill('users')
+  await page.getByRole('button', { name: /create table/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/users/i)).toBeVisible()
   const node = page.locator('.x6-node').first()
   const box = await node.boundingBox()
