@@ -1,4 +1,5 @@
 import { ProjectRepository } from '@/server/persistence/project-repository'
+import type { EditorProjectSnapshot } from '@/modeler/types/editor-snapshot'
 
 export const projectService = {
   async listProjects() {
@@ -13,7 +14,7 @@ export const projectService = {
     return ProjectRepository.getById(id)
   },
 
-  async saveWorkingSnapshot(id: string, snapshot: unknown) {
+  async saveWorkingSnapshot(id: string, snapshot: EditorProjectSnapshot) {
     return ProjectRepository.saveWorkingSnapshot(id, snapshot)
   },
 }

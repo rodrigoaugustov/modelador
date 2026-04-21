@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed": "#393c55",
+                    "surface-container-highest": "#d9e4ea",
+                    "outline-variant": "#a9b4b9",
+                    "on-tertiary-container": "#4b4e69",
+                    "secondary": "#506076",
+                    "on-primary-fixed-variant": "#0050d4",
+                    "secondary-container": "#d3e4fe",
+                    "surface-variant": "#d9e4ea",
+                    "on-tertiary": "#fbf8ff",
+                    "secondary-dim": "#44546a",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#c7d3ff",
+                    "primary": "#0053db",
+                    "error-container": "#fe8983",
+                    "inverse-on-surface": "#9a9d9f",
+                    "on-primary-fixed": "#003798",
+                    "tertiary-fixed": "#dcddfe",
+                    "surface-bright": "#f7f9fb",
+                    "secondary-fixed": "#d3e4fe",
+                    "primary-dim": "#0048c1",
+                    "primary-container": "#dbe1ff",
+                    "on-surface": "#2a3439",
+                    "on-background": "#2a3439",
+                    "surface-container-low": "#f0f4f7",
+                    "error": "#9f403d",
+                    "background": "#f7f9fb",
+                    "on-error": "#fff7f6",
+                    "on-primary": "#f8f7ff",
+                    "surface-container-high": "#e1e9ee",
+                    "outline": "#717c82",
+                    "surface-dim": "#cfdce3",
+                    "inverse-primary": "#618bff",
+                    "surface-container": "#e8eff3",
+                    "on-secondary-fixed": "#314055",
+                    "on-tertiary-fixed-variant": "#555873",
+                    "on-secondary": "#f7f9ff",
+                    "tertiary-dim": "#4f516c",
+                    "primary-fixed": "#dbe1ff",
+                    "on-secondary-fixed-variant": "#4d5d73",
+                    "surface": "#f7f9fb",
+                    "tertiary-fixed-dim": "#cecfef",
+                    "surface-tint": "#0053db",
+                    "error-dim": "#4e0309",
+                    "secondary-fixed-dim": "#c5d6f0",
+                    "tertiary-container": "#dcddfe",
+                    "tertiary": "#5b5d78",
+                    "on-error-container": "#752121",
+                    "inverse-surface": "#0b0f10",
+                    "on-secondary-container": "#435368",
+                    "on-primary-container": "#0048bf",
+                    "on-surface-variant": "#566166"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 right-0 h-12 flex justify-between items-center px-6 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-50">
+<div class="flex items-center gap-8">
+<span class="text-lg font-extrabold text-slate-900 dark:text-slate-100 tracking-tighter">DataArchitect</span>
+<nav class="hidden md:flex items-center gap-6">
+<a class="font-['Manrope'] text-sm font-medium tracking-tight text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors px-2 py-1 rounded" href="#">File</a>
+<a class="font-['Manrope'] text-sm font-medium tracking-tight text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors px-2 py-1 rounded" href="#">Edit</a>
+<a class="font-['Manrope'] text-sm font-medium tracking-tight text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors px-2 py-1 rounded" href="#">View</a>
+<a class="font-['Manrope'] text-sm font-bold border-b-2 border-blue-700 text-blue-700 dark:text-blue-400 px-2 py-1" href="#">Schema</a>
+<a class="font-['Manrope'] text-sm font-medium tracking-tight text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors px-2 py-1 rounded" href="#">Generate</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex gap-2">
+<button class="p-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800/50 text-slate-500">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800/50 text-slate-500">
+<span class="material-symbols-outlined text-[20px]">help_outline</span>
+</button>
+</div>
+<button class="bg-blue-700 text-white px-4 py-1 rounded-lg text-sm font-semibold hover:opacity-80 duration-150">Deploy</button>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-12 bottom-0 w-20 flex flex-col items-center py-4 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 z-40">
+<div class="mb-8 flex flex-col items-center">
+<div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-primary">terminal</span>
+</div>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">Alpha</span>
+</div>
+<div class="flex flex-col gap-4 w-full px-2">
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 py-3 rounded-xl hover:text-blue-600 dark:hover:text-blue-300 transition-all cursor-pointer">
+<span class="material-symbols-outlined mb-1">near_me</span>
+<span class="font-['Inter'] text-[9px] uppercase tracking-tighter">Select</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-r-2 border-blue-700 py-3 rounded-xl scale-95 duration-100">
+<span class="material-symbols-outlined mb-1">table_chart</span>
+<span class="font-['Inter'] text-[9px] uppercase tracking-tighter">Table</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 py-3 rounded-xl hover:text-blue-600 dark:hover:text-blue-300 transition-all cursor-pointer">
+<span class="material-symbols-outlined mb-1">account_tree</span>
+<span class="font-['Inter'] text-[9px] uppercase tracking-tighter">Relation</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 py-3 rounded-xl hover:text-blue-600 dark:hover:text-blue-300 transition-all cursor-pointer">
+<span class="material-symbols-outlined mb-1">layers</span>
+<span class="font-['Inter'] text-[9px] uppercase tracking-tighter">Layer</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 py-3 rounded-xl hover:text-blue-600 dark:hover:text-blue-300 transition-all cursor-pointer">
+<span class="material-symbols-outlined mb-1">history</span>
+<span class="font-['Inter'] text-[9px] uppercase tracking-tighter">History</span>
+</div>
+</div>
+<button class="mt-auto w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">add</span>
+</button>
+</aside>
+<!-- Main Workspace Background (Blurred) -->
+<main class="ml-20 mt-12 min-h-[calc(100vh-3rem)] bg-surface p-8 relative overflow-hidden">
+<!-- Visual Schema Simulation -->
+<div class="grid grid-cols-12 gap-8 opacity-40 select-none pointer-events-none">
+<!-- Schema Card 1 -->
+<div class="col-span-3 border border-outline-variant/30 rounded-lg overflow-hidden bg-surface-container-low shadow-sm">
+<div class="bg-surface-container-highest px-4 py-2 flex justify-between items-center">
+<span class="text-xs font-bold font-headline">users</span>
+<span class="material-symbols-outlined text-sm">more_vert</span>
+</div>
+<div class="p-3 flex flex-col gap-2 bg-surface-container-lowest">
+<div class="flex justify-between items-center text-[11px]">
+<span class="font-mono text-on-surface">id <span class="text-primary">uuid</span></span>
+<span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">key</span>
+</div>
+<div class="flex justify-between items-center text-[11px]">
+<span class="font-mono text-on-surface">email <span class="text-outline">varchar</span></span>
+</div>
+<div class="flex justify-between items-center text-[11px]">
+<span class="font-mono text-on-surface">created_at <span class="text-outline">timestamp</span></span>
+</div>
+</div>
+</div>
+<!-- Schema Card 2 -->
+<div class="col-span-3 border border-outline-variant/30 rounded-lg overflow-hidden bg-surface-container-low shadow-sm">
+<div class="bg-surface-container-highest px-4 py-2 flex justify-between items-center">
+<span class="text-xs font-bold font-headline">orders</span>
+<span class="material-symbols-outlined text-sm">more_vert</span>
+</div>
+<div class="p-3 flex flex-col gap-2 bg-surface-container-lowest">
+<div class="flex justify-between items-center text-[11px]">
+<span class="font-mono text-on-surface">id <span class="text-primary">uuid</span></span>
+<span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">key</span>
+</div>
+<div class="flex justify-between items-center text-[11px]">
+<span class="font-mono text-on-surface">user_id <span class="text-tertiary">uuid</span></span>
+</div>
+<div class="flex justify-between items-center text-[11px]">
+<span class="font-mono text-on-surface">total <span class="text-outline">numeric</span></span>
+</div>
+</div>
+</div>
+</div>
+<!-- Create Table Modal Overlay -->
+<div class="fixed inset-0 z-[60] flex items-center justify-center px-4 bg-on-surface/5 backdrop-blur-sm">
+<div class="glass-panel w-full max-w-2xl rounded-xl shadow-2xl border border-outline-variant/20 flex flex-col max-h-[921px]">
+<!-- Modal Header -->
+<div class="p-6 border-b border-surface-container-high flex justify-between items-start">
+<div>
+<h2 class="text-xl font-extrabold font-headline tracking-tight text-on-surface">Create New Table</h2>
+<p class="text-sm text-on-surface-variant mt-1">Define the structure and properties of your new entity.</p>
+</div>
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined text-outline">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<div class="p-6 overflow-y-auto space-y-8">
+<!-- Basic Info Grid -->
+<div class="grid grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="block text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Table Name</label>
+<input class="w-full bg-surface-container-lowest border-0 ring-1 ring-outline-variant/30 focus:ring-2 focus:ring-primary/40 rounded-sm py-2 px-3 text-sm font-mono placeholder:text-outline-variant transition-all" placeholder="e.g. customer_profiles" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="block text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Schema</label>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border-0 ring-1 ring-outline-variant/30 focus:ring-2 focus:ring-primary/40 rounded-sm py-2 px-3 text-sm appearance-none">
+<option>public</option>
+<option>auth</option>
+<option>analytics</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Attributes Section -->
+<div class="space-y-4">
+<div class="flex justify-between items-end">
+<label class="block text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Attributes &amp; Columns</label>
+<button class="flex items-center gap-1.5 text-primary text-xs font-semibold hover:underline">
+<span class="material-symbols-outlined text-sm">add_circle</span> Add Column
+                            </button>
+</div>
+<div class="border border-surface-container-high rounded-lg overflow-hidden bg-surface-container-low/50">
+<!-- Column Headers -->
+<div class="grid grid-cols-12 gap-4 px-4 py-2.5 bg-surface-container-high/50 border-b border-surface-container-high">
+<div class="col-span-5 text-[10px] font-bold uppercase text-on-surface-variant">Column Name</div>
+<div class="col-span-3 text-[10px] font-bold uppercase text-on-surface-variant">Data Type</div>
+<div class="col-span-2 text-center text-[10px] font-bold uppercase text-on-surface-variant">PK</div>
+<div class="col-span-2 text-center text-[10px] font-bold uppercase text-on-surface-variant">NN</div>
+</div>
+<!-- Column Rows -->
+<div class="divide-y divide-surface-container-high">
+<!-- Row 1: ID -->
+<div class="grid grid-cols-12 gap-4 px-4 py-3 items-center group hover:bg-surface-container-highest transition-colors">
+<div class="col-span-5">
+<input class="w-full bg-transparent border-0 p-0 text-sm font-mono focus:ring-0" type="text" value="id"/>
+</div>
+<div class="col-span-3">
+<div class="text-xs font-semibold text-primary py-1 px-2 bg-primary-container rounded inline-flex items-center gap-1">
+                                            UUID <span class="material-symbols-outlined text-xs">expand_more</span>
+</div>
+</div>
+<div class="col-span-2 flex justify-center">
+<div class="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-white">check</span>
+</div>
+</div>
+<div class="col-span-2 flex justify-center">
+<div class="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-white">check</span>
+</div>
+</div>
+</div>
+<!-- Row 2: Name -->
+<div class="grid grid-cols-12 gap-4 px-4 py-3 items-center group hover:bg-surface-container-highest transition-colors">
+<div class="col-span-5">
+<input class="w-full bg-transparent border-0 p-0 text-sm font-mono focus:ring-0" type="text" value="full_name"/>
+</div>
+<div class="col-span-3">
+<div class="text-xs font-semibold text-on-secondary-container py-1 px-2 bg-secondary-container rounded inline-flex items-center gap-1">
+                                            VARCHAR <span class="material-symbols-outlined text-xs">expand_more</span>
+</div>
+</div>
+<div class="col-span-2 flex justify-center">
+<div class="w-5 h-5 rounded border border-outline-variant bg-surface-container-lowest"></div>
+</div>
+<div class="col-span-2 flex justify-center">
+<div class="w-5 h-5 rounded border border-primary bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-white">check</span>
+</div>
+</div>
+</div>
+<!-- Row 3: Created At -->
+<div class="grid grid-cols-12 gap-4 px-4 py-3 items-center group hover:bg-surface-container-highest transition-colors">
+<div class="col-span-5">
+<input class="w-full bg-transparent border-0 p-0 text-sm font-mono focus:ring-0" type="text" value="created_at"/>
+</div>
+<div class="col-span-3">
+<div class="text-xs font-semibold text-tertiary-dim py-1 px-2 bg-tertiary-container rounded inline-flex items-center gap-1">
+                                            TIMESTAMP <span class="material-symbols-outlined text-xs">expand_more</span>
+</div>
+</div>
+<div class="col-span-2 flex justify-center">
+<div class="w-5 h-5 rounded border border-outline-variant bg-surface-container-lowest"></div>
+</div>
+<div class="col-span-2 flex justify-center">
+<div class="w-5 h-5 rounded border border-outline-variant bg-surface-container-lowest"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="p-6 bg-surface-container-low/50 border-t border-surface-container-high flex justify-between items-center rounded-b-xl">
+<div class="flex items-center gap-2 text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">info</span>
+<span>Shift + Enter to create</span>
+</div>
+<div class="flex gap-3">
+<button class="px-5 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-xl">Cancel</button>
+<button class="px-8 py-2 text-sm font-bold text-on-primary bg-gradient-to-r from-primary to-primary-dim shadow-md hover:shadow-lg transition-all rounded-xl">Create Table</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Project Identity Background Decors -->
+<div class="fixed top-1/4 right-[-10%] w-[50%] h-[50%] bg-primary/5 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+<div class="fixed bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-tertiary/5 blur-[100px] rounded-full pointer-events-none -z-10"></div>
+</body></html>

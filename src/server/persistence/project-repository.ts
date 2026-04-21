@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { buildEmptyProjectSnapshot, type EditorProjectSnapshot } from '@/modeler/types/editor-snapshot'
 
 const supabase = createSupabaseServerClient()
 
@@ -18,27 +19,11 @@ export const ProjectRepository = {
 
   async create(input: { name: string; description?: string }) {
     const id = crypto.randomUUID()
-    const snapshot = {
-      project: {
-        id,
-        name: input.name,
-        description: input.description ?? '',
-      },
-      model: {
-        tables: [],
-        relationships: [],
-      },
-      diagram: {
-        viewport: {
-          x: 0,
-          y: 0,
-          zoom: 1,
-        },
-      },
-      metadata: {
-        viewMode: 'logical',
-      },
-    }
+    const snapshot = buildEmptyProjectSnapshot({
+      id,
+      name: input.name,
+      description: input.description ?? '',
+    })
 
     const { data, error } = await supabase
       .from('projects')
@@ -58,7 +43,7 @@ export const ProjectRepository = {
     return data
   },
 
-  async getById(id: string) {
+  async getById(id: string): Promise<EditorProjectSnapshot> {
     const { data, error } = await supabase
       .from('projects')
       .select('working_snapshot_json')
@@ -72,7 +57,7 @@ export const ProjectRepository = {
     return data.working_snapshot_json
   },
 
-  async saveWorkingSnapshot(id: string, snapshot: unknown) {
+  async saveWorkingSnapshot(id: string, snapshot: EditorProjectSnapshot) {
     const { data, error } = await supabase
       .from('projects')
       .update({

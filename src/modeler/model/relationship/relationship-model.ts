@@ -6,6 +6,12 @@ type CreateRelationshipArgs = {
   id: string
   primaryTable: TableModel
   secondaryTable: TableModel
+  primaryAttributeId?: string
+  secondaryAttributeId?: string
+  relationshipType?: 'one-to-one' | 'one-to-many' | 'many-to-many'
+  onDelete?: 'no action' | 'restrict' | 'cascade' | 'set null'
+  onUpdate?: 'no action' | 'restrict' | 'cascade' | 'set null'
+  enforceConstraint?: boolean
 }
 
 export class RelationshipModel extends SVGModel {
@@ -14,6 +20,12 @@ export class RelationshipModel extends SVGModel {
   }
 
   isSelected = false
+  primaryAttributeId = ''
+  secondaryAttributeId = ''
+  relationshipType: 'one-to-one' | 'one-to-many' | 'many-to-many' = 'one-to-many'
+  onDelete: 'no action' | 'restrict' | 'cascade' | 'set null' = 'cascade'
+  onUpdate: 'no action' | 'restrict' | 'cascade' | 'set null' = 'cascade'
+  enforceConstraint = true
 
   private constructor(
     id: string,
