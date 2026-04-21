@@ -49,11 +49,12 @@ test('user edits table identity, switches to physical mode, edits relationship a
   await page.getByRole('button', { name: /apply schema changes/i }).click()
 
   await page.getByRole('button', { name: /configure relationship/i }).click()
-  await page.getByLabel('Primary table').selectOption({ label: 'users' })
-  await page.getByLabel('Secondary table').selectOption({ label: 'orders' })
-  await page.getByLabel('Primary attribute').selectOption({ label: 'users.id' })
-  await page.getByLabel('Secondary attribute').selectOption({ label: 'orders.user_id' })
-  await page.getByRole('button', { name: /create relationship/i }).click()
+  const relationshipDialog = page.locator('[aria-label="Configure relationship dialog"]')
+  await relationshipDialog.getByLabel('Primary table').selectOption({ label: 'users' })
+  await relationshipDialog.getByLabel('Secondary table').selectOption({ label: 'orders' })
+  await relationshipDialog.getByLabel('Primary attribute 1').selectOption({ label: 'users.id' })
+  await relationshipDialog.getByLabel('Secondary attribute 1').selectOption({ label: 'orders.user_id' })
+  await relationshipDialog.getByRole('button', { name: /create relationship/i }).click()
   await expect.poll(async () => page.evaluate(() => document.querySelectorAll('.x6-edge').length)).toBe(1)
 
   await page.locator('.x6-edge path').first().click({ force: true })
@@ -63,7 +64,7 @@ test('user edits table identity, switches to physical mode, edits relationship a
   await page.getByLabel('On update').selectOption('no action')
   await page.getByRole('button', { name: /save relationship/i }).click()
 
-  await page.getByRole('button', { name: /switch to physical mode/i }).click()
+  await page.getByRole('button', { name: /physical mode/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/tb_users/i)).toBeVisible()
   await expect(page.getByTestId('modeler-canvas').getByText(/tb_orders/i)).toBeVisible()
 

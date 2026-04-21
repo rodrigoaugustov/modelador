@@ -18,16 +18,17 @@ describe('EditorProjectSnapshot', () => {
                 id: 'attr_users_id',
                 logicalName: 'id',
                 physicalName: 'id',
-                dataType: 'uuid',
-                size: null,
-                isNull: false,
-                isPrimaryKey: true,
-                isForeignKey: false,
-                definition: null,
-                example: null,
-                domain: null,
-              },
-            ],
+              dataType: 'uuid',
+              size: null,
+              isNull: false,
+              isPrimaryKey: true,
+              isForeignKey: false,
+              displayOrder: 0,
+              definition: null,
+              example: null,
+              domain: null,
+            },
+          ],
           },
         ],
         relationships: [
@@ -35,12 +36,19 @@ describe('EditorProjectSnapshot', () => {
             id: 'rel_users_orders',
             primaryTableId: 'table_users',
             secondaryTableId: 'table_orders',
-            primaryAttributeId: 'attr_users_id',
-            secondaryAttributeId: 'attr_orders_user_id',
+            attributeMappings: [
+              {
+                id: 'map_users_orders_user_id',
+                primaryAttributeId: 'attr_users_id',
+                secondaryAttributeId: 'attr_orders_user_id',
+              },
+            ],
             relationshipType: 'one-to-many',
             onDelete: 'cascade',
             onUpdate: 'cascade',
             enforceConstraint: true,
+            lineStyle: 'orthogonal',
+            vertices: [{ x: 144, y: 96 }],
           },
         ],
       },
@@ -49,7 +57,11 @@ describe('EditorProjectSnapshot', () => {
     }
 
     expect(snapshot.model.tables[0].attributes[0].isPrimaryKey).toBe(true)
+    expect(snapshot.model.tables[0].attributes[0].displayOrder).toBe(0)
+    expect(snapshot.model.relationships[0].attributeMappings).toHaveLength(1)
     expect(snapshot.model.relationships[0].relationshipType).toBe('one-to-many')
+    expect(snapshot.model.relationships[0].lineStyle).toBe('orthogonal')
+    expect(snapshot.model.relationships[0].vertices).toEqual([{ x: 144, y: 96 }])
   })
 
   it('builds an empty project snapshot with a logical view mode default', () => {

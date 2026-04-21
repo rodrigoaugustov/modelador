@@ -21,12 +21,13 @@ export function serializeProjectModel(project: ProjectModel): EditorProjectSnaps
     attributes: [
       ...Array.from(table.tablePrimaryKeyList.values()),
       ...Array.from(table.tableAttributeList.values()),
-    ].map((attribute) => ({
+    ].map((attribute, index) => ({
       id: attribute.identification,
       logicalName: attribute.logicalName ?? '',
       physicalName: attribute.physicalName,
       dataType: attribute.dataType,
       size: attribute.size,
+      displayOrder: index,
       isNull: attribute.isNull ?? true,
       isPrimaryKey: attribute.isPrimaryKey ?? false,
       isForeignKey: attribute.isForeignKey ?? false,
@@ -40,12 +41,17 @@ export function serializeProjectModel(project: ProjectModel): EditorProjectSnaps
     id: relationship.identification,
     primaryTableId: relationship.primaryTable.identification,
     secondaryTableId: relationship.secondaryTable.identification,
-    primaryAttributeId: relationship.primaryAttributeId,
-    secondaryAttributeId: relationship.secondaryAttributeId,
+    attributeMappings: relationship.attributeMappings.map((mapping) => ({
+      id: mapping.id,
+      primaryAttributeId: mapping.primaryAttributeId,
+      secondaryAttributeId: mapping.secondaryAttributeId,
+    })),
     relationshipType: relationship.relationshipType,
     onDelete: relationship.onDelete,
     onUpdate: relationship.onUpdate,
     enforceConstraint: relationship.enforceConstraint,
+    lineStyle: relationship.lineStyle,
+    vertices: relationship.vertices,
   }))
 
   return snapshot

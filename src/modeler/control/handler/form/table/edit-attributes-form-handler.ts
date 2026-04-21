@@ -1,6 +1,13 @@
 import type { EditorAttributeSnapshot } from '@/modeler/types/editor-snapshot'
 
 export class EditAttributesFormHandler {
+  private rewriteDisplayOrder(attributes: EditorAttributeSnapshot[]) {
+    return attributes.map((attribute, index) => ({
+      ...attribute,
+      displayOrder: index,
+    }))
+  }
+
   addAttribute(attributes: EditorAttributeSnapshot[]): EditorAttributeSnapshot[] {
     return [
       ...attributes,
@@ -10,6 +17,7 @@ export class EditAttributesFormHandler {
         physicalName: null,
         dataType: 'text',
         size: null,
+        displayOrder: attributes.length,
         isNull: true,
         isPrimaryKey: false,
         isForeignKey: false,
@@ -21,7 +29,7 @@ export class EditAttributesFormHandler {
   }
 
   removeAttribute(attributes: EditorAttributeSnapshot[], attributeId: string): EditorAttributeSnapshot[] {
-    return attributes.filter((attribute) => attribute.id !== attributeId)
+    return this.rewriteDisplayOrder(attributes.filter((attribute) => attribute.id !== attributeId))
   }
 
   updateAttribute(
@@ -34,6 +42,7 @@ export class EditAttributesFormHandler {
         ? {
             ...attribute,
             ...patch,
+            isNull: patch.isPrimaryKey ? false : (patch.isNull ?? attribute.isNull),
           }
         : attribute,
     )

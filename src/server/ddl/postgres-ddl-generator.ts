@@ -24,7 +24,7 @@ export function generatePostgresDDL(snapshot: ValidationSnapshot) {
 
       for (const foreignKey of table.foreignKeys) {
         columns.push(
-          `  foreign key (${foreignKey.column}) references ${foreignKey.referencesTable} (${foreignKey.referencesColumn}) on delete ${foreignKey.onDelete} on update ${foreignKey.onUpdate}`,
+          `  foreign key (${foreignKey.columns.join(', ')}) references ${foreignKey.referencesTable} (${foreignKey.referencesColumns.join(', ')}) on delete ${foreignKey.onDelete} on update ${foreignKey.onUpdate}`,
         )
       }
 
