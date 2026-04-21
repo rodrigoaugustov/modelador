@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Configure Relationship - DataArchitect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#393c55",
+                        "surface-container-highest": "#d9e4ea",
+                        "outline-variant": "#a9b4b9",
+                        "on-tertiary-container": "#4b4e69",
+                        "secondary": "#506076",
+                        "on-primary-fixed-variant": "#0050d4",
+                        "secondary-container": "#d3e4fe",
+                        "surface-variant": "#d9e4ea",
+                        "on-tertiary": "#fbf8ff",
+                        "secondary-dim": "#44546a",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#c7d3ff",
+                        "primary": "#0053db",
+                        "error-container": "#fe8983",
+                        "inverse-on-surface": "#9a9d9f",
+                        "on-primary-fixed": "#003798",
+                        "tertiary-fixed": "#dcddfe",
+                        "surface-bright": "#f7f9fb",
+                        "secondary-fixed": "#d3e4fe",
+                        "primary-dim": "#0048c1",
+                        "primary-container": "#dbe1ff",
+                        "on-surface": "#2a3439",
+                        "on-background": "#2a3439",
+                        "surface-container-low": "#f0f4f7",
+                        "error": "#9f403d",
+                        "background": "#f7f9fb",
+                        "on-error": "#fff7f6",
+                        "on-primary": "#f8f7ff",
+                        "surface-container-high": "#e1e9ee",
+                        "outline": "#717c82",
+                        "surface-dim": "#cfdce3",
+                        "inverse-primary": "#618bff",
+                        "surface-container": "#e8eff3",
+                        "on-secondary-fixed": "#314055",
+                        "on-tertiary-fixed-variant": "#555873",
+                        "on-secondary": "#f7f9ff",
+                        "tertiary-dim": "#4f516c",
+                        "primary-fixed": "#dbe1ff",
+                        "on-secondary-fixed-variant": "#4d5d73",
+                        "surface": "#f7f9fb",
+                        "tertiary-fixed-dim": "#cecfef",
+                        "surface-tint": "#0053db",
+                        "error-dim": "#4e0309",
+                        "secondary-fixed-dim": "#c5d6f0",
+                        "tertiary-container": "#dcddfe",
+                        "tertiary": "#5b5d78",
+                        "on-error-container": "#752121",
+                        "inverse-surface": "#0b0f10",
+                        "on-secondary-container": "#435368",
+                        "on-primary-container": "#0048bf",
+                        "on-surface-variant": "#566166"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary-container selection:text-on-primary-container overflow-hidden h-screen w-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-slate-100 dark:bg-slate-900 flex justify-between items-center w-full px-6 border-b border-slate-200 dark:border-slate-800 font-['Manrope'] text-sm font-medium tracking-tight h-12 z-50">
+<div class="flex items-center gap-8">
+<span class="text-lg font-extrabold text-slate-900 dark:text-slate-100 tracking-tighter">DataArchitect</span>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors px-2 py-1 rounded" href="#">File</a>
+<a class="text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors px-2 py-1 rounded" href="#">Edit</a>
+<a class="text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors px-2 py-1 rounded" href="#">View</a>
+<a class="text-blue-700 dark:text-blue-400 font-bold border-b-2 border-blue-700 px-2 py-1" href="#">Schema</a>
+<a class="text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors px-2 py-1 rounded" href="#">Generate</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex gap-2">
+<button class="material-symbols-outlined text-slate-500 dark:text-slate-400 p-1 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded transition-colors" data-icon="settings">settings</button>
+<button class="material-symbols-outlined text-slate-500 dark:text-slate-400 p-1 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded transition-colors" data-icon="help_outline">help_outline</button>
+</div>
+<button class="bg-primary text-on-primary px-4 py-1.5 rounded-xl font-semibold text-xs transition-all active:opacity-80">Deploy</button>
+</div>
+</header>
+<div class="flex flex-1 relative overflow-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-12 bottom-0 w-20 flex flex-col items-center py-4 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-['Inter'] text-[11px] uppercase tracking-widest z-40">
+<div class="flex flex-col gap-6 w-full items-center">
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 hover:text-blue-600 dark:hover:text-blue-300 transition-all cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-95 duration-100" data-icon="near_me">near_me</span>
+<span>Select</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 hover:text-blue-600 dark:hover:text-blue-300 transition-all cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-95 duration-100" data-icon="table_chart">table_chart</span>
+<span>Table</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-r-2 border-blue-700 w-full py-3 transition-all cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-95 duration-100" data-icon="account_tree">account_tree</span>
+<span>Relation</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 hover:text-blue-600 dark:hover:text-blue-300 transition-all cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-95 duration-100" data-icon="layers">layers</span>
+<span>Layer</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 hover:text-blue-600 dark:hover:text-blue-300 transition-all cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-95 duration-100" data-icon="history">history</span>
+<span>History</span>
+</div>
+</div>
+<div class="mt-auto">
+<button class="bg-primary text-on-primary w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-95 duration-100">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</aside>
+<!-- Main Editor Canvas (Background) -->
+<main class="ml-20 flex-1 bg-surface relative overflow-hidden flex items-center justify-center">
+<!-- Grid Pattern Decoration -->
+<div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(#2a3439 1px, transparent 1px); background-size: 32px 32px;"></div>
+<!-- Mock Schema Cards in background -->
+<div class="flex gap-20 scale-90 blur-[2px] pointer-events-none opacity-40">
+<div class="w-64 rounded-lg bg-surface-container-high overflow-hidden shadow-sm">
+<div class="bg-surface-container-highest px-4 py-2 text-on-surface font-bold text-sm">users</div>
+<div class="p-4 flex flex-col gap-2 bg-surface-container-lowest">
+<div class="flex justify-between text-xs"><span class="text-on-surface-variant">id</span><span class="text-tertiary">UUID</span></div>
+<div class="flex justify-between text-xs"><span class="text-on-surface-variant">email</span><span class="text-tertiary">VARCHAR</span></div>
+</div>
+</div>
+<div class="w-64 rounded-lg bg-surface-container-high overflow-hidden shadow-sm">
+<div class="bg-surface-container-highest px-4 py-2 text-on-surface font-bold text-sm">orders</div>
+<div class="p-4 flex flex-col gap-2 bg-surface-container-lowest">
+<div class="flex justify-between text-xs"><span class="text-on-surface-variant">id</span><span class="text-tertiary">UUID</span></div>
+<div class="flex justify-between text-xs"><span class="text-on-surface-variant">user_id</span><span class="text-tertiary">UUID</span></div>
+</div>
+</div>
+</div>
+<!-- MODAL OVERLAY -->
+<div class="absolute inset-0 bg-on-surface/10 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+<!-- CONFIGURE RELATIONSHIP MODAL -->
+<div class="w-full max-w-4xl bg-surface-container-lowest/85 backdrop-blur-xl rounded-xl shadow-[0px_10px_30px_rgba(42,52,57,0.08)] flex flex-col overflow-hidden max-h-[921px]">
+<!-- Modal Header -->
+<div class="px-8 py-6 flex justify-between items-center bg-surface-container-low/50">
+<div>
+<h2 class="text-xl font-extrabold text-on-surface tracking-tight">Configure Relationship</h2>
+<p class="text-on-surface-variant text-xs mt-0.5">Define constraints and cardinality between entities</p>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-highest p-2 rounded-full transition-colors" data-icon="close">close</button>
+</div>
+<!-- Modal Body -->
+<div class="flex-1 overflow-y-auto px-8 py-6 space-y-10">
+<!-- Section 1: Entity Mapping -->
+<section class="grid grid-cols-1 md:grid-cols-11 items-center gap-4">
+<div class="md:col-span-5 space-y-4">
+<label class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Source Entity</label>
+<div class="space-y-3">
+<div class="bg-surface-container-low p-3 rounded-lg flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="table_chart">table_chart</span>
+<div class="flex-1">
+<div class="text-xs text-on-surface-variant">Table</div>
+<div class="text-sm font-semibold">users</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/20 p-3 rounded-lg flex items-center gap-3">
+<div class="flex-1">
+<div class="text-xs text-on-surface-variant">Column (Primary Key)</div>
+<div class="text-sm font-medium">id</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="key" style="font-variation-settings: 'FILL' 1;">key</span>
+</div>
+</div>
+</div>
+<div class="md:col-span-1 flex justify-center">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container shadow-sm">
+<span class="material-symbols-outlined" data-icon="link">link</span>
+</div>
+</div>
+<div class="md:col-span-5 space-y-4">
+<label class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Target Entity</label>
+<div class="space-y-3">
+<div class="bg-surface-container-low p-3 rounded-lg flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="table_chart">table_chart</span>
+<div class="flex-1">
+<div class="text-xs text-on-surface-variant">Table</div>
+<div class="text-sm font-semibold text-primary">orders</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/20 p-3 rounded-lg flex items-center gap-3">
+<div class="flex-1">
+<div class="text-xs text-on-surface-variant">Column (Foreign Key)</div>
+<div class="text-sm font-medium">user_id</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Cardinality & Preview -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+<div class="space-y-6">
+<div>
+<label class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold block mb-4">Relationship Type</label>
+<div class="grid grid-cols-3 gap-3">
+<button class="flex flex-col items-center gap-2 p-4 rounded-xl bg-surface-container-low hover:bg-surface-container-high transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary" data-icon="looks_one">looks_one</span>
+<span class="text-[11px] font-semibold">1:1</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-4 rounded-xl bg-primary-container border border-primary/20 transition-colors">
+<span class="material-symbols-outlined text-primary" data-icon="join_inner">join_inner</span>
+<span class="text-[11px] font-bold text-on-primary-container">1:N (One-to-Many)</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-4 rounded-xl bg-surface-container-low hover:bg-surface-container-high transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary" data-icon="all_inclusive">all_inclusive</span>
+<span class="text-[11px] font-semibold">N:M</span>
+</button>
+</div>
+</div>
+<div class="space-y-4">
+<label class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold block">Integrity Actions</label>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<span class="text-xs font-medium text-on-surface">On Delete</span>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/30 rounded-lg text-sm px-3 py-2.5 focus:ring-primary/40 focus:ring-2 appearance-none">
+<option>CASCADE</option>
+<option>SET NULL</option>
+<option>RESTRICT</option>
+<option>NO ACTION</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-2.5 pointer-events-none text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<div class="space-y-2">
+<span class="text-xs font-medium text-on-surface">On Update</span>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/30 rounded-lg text-sm px-3 py-2.5 focus:ring-primary/40 focus:ring-2 appearance-none">
+<option>CASCADE</option>
+<option>SET NULL</option>
+<option>RESTRICT</option>
+<option>NO ACTION</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-2.5 pointer-events-none text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Relationship Visual Preview -->
+<div class="flex flex-col">
+<label class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold block mb-4">Schema Preview</label>
+<div class="flex-1 bg-surface-container rounded-2xl relative flex items-center justify-center p-8 min-h-[200px] border border-outline-variant/10">
+<div class="flex items-center gap-16 w-full max-w-sm">
+<!-- Left Side -->
+<div class="flex-1 bg-surface-container-lowest p-3 rounded-lg shadow-sm">
+<div class="text-[10px] text-on-surface-variant font-bold mb-1">users</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium">id</span>
+<span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(0,83,219,0.5)]"></span>
+</div>
+</div>
+<!-- Connection Line -->
+<div class="relative h-[2px] bg-primary flex-1">
+<div class="absolute -left-1 -top-1 font-bold text-[10px] text-primary bg-surface-container px-1 rounded">1</div>
+<div class="absolute -right-1 -top-1 font-bold text-[10px] text-primary bg-surface-container px-1 rounded">N</div>
+<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-on-primary rounded-full px-2 py-0.5 text-[8px] font-bold">FK</div>
+</div>
+<!-- Right Side -->
+<div class="flex-1 bg-surface-container-lowest p-3 rounded-lg shadow-sm">
+<div class="text-[10px] text-on-surface-variant font-bold mb-1">orders</div>
+<div class="flex items-center">
+<span class="w-2 h-2 rounded-full bg-primary/40 mr-3"></span>
+<span class="text-xs font-medium">user_id</span>
+</div>
+</div>
+</div>
+<div class="absolute bottom-4 text-center">
+<span class="text-[10px] text-on-surface-variant italic">Interactive link preview based on current selection</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 3: Advanced Options -->
+<section class="p-4 bg-secondary-container/20 rounded-xl flex items-center gap-4">
+<span class="material-symbols-outlined text-secondary" data-icon="info">info</span>
+<div class="flex-1">
+<div class="text-sm font-semibold text-on-secondary-container">Constraint Enforcement</div>
+<div class="text-xs text-on-secondary-container/70">A FOREIGN KEY constraint will be created to enforce this relationship in the target database.</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</section>
+</div>
+<!-- Modal Footer -->
+<div class="px-8 py-6 bg-surface-container-low/50 flex justify-end items-center gap-4">
+<button class="px-6 py-2.5 text-sm font-bold text-on-surface-variant hover:text-on-surface transition-colors">Discard</button>
+<button class="px-8 py-2.5 bg-gradient-to-r from-primary to-primary-dim text-on-primary text-sm font-bold rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">Create Relationship</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Floating Action Button (Suppressed on Modals but kept for shell context as per rules if primary action is on home) -->
+<!-- The rules suggest suppressing FAB on Details/Transactional screens. This is a configuration screen. Hiding it. -->
+</body></html>

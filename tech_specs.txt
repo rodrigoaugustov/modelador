@@ -1,0 +1,172 @@
+1 Quero um sistema que permita a usuários a criarem modelos de dados diretamente em navegadores (browser).
+2 O sistema deverá ser dividido em três partes:
+    2.1 front end
+    2.2 back end
+    2.3 banco de dados
+3 o front end será dividido, basicamente, por:
+    3.1 javascript em typescript
+    3.2 html 5+
+    3.3 recursos de armazenamento temporário de dados complexos, análogo a um SQLite
+4 o script do front end deverá utilizar programação orienta a objeto e manipulará objetos implementando as seguintes características:
+    4.1 as classes dos script deverá ser dividido nos packages:
+        4.1.1 scr/control
+            4.1.1.1 scr/control/action
+            4.1.1.2 scr/control/assembler
+                4.1.1.2.1 scr/control/assembler/form
+                    4.1.1.2.1.1 scr/control/assembler/form/relationship
+                    4.1.1.2.1.2 scr/control/assembler/form/table
+                4.1.1.2.2 scr/control/assembler/relationship
+                4.1.1.2.3 scr/control/assembler/table
+            4.1.1.3 scr/control/handler
+                4.1.1.3.1 scr/control/handler/form
+                4.1.1.3.2 scr/control/handler/relationship
+                4.1.1.3.3 scr/control/handler/table
+                4.1.1.3.4 scr/control/handler/workspace
+            4.1.1.4 scr/control/config
+            4.1.1.5 scr/control/util
+        4.1.2 scr/enum
+        4.1.3 src/model
+            4.1.3.1 src/model/relationship
+                4.1.3.1.1 src/model/relationship/segment
+            4.1.3.2 src/model/table
+                4.1.3.2.1 src/model/table/text
+        4.1.4 src/util
+            4.1.4.1 src/util/collection
+            4.1.4.2 src/util/date
+            4.1.4.3 src/util/exception
+        4.1.5 src/view
+            4.1.5.1 src/view/img
+            4.1.5.2 src/view/modal
+            4.1.5.3 src/view/panel
+            4.1.5.4 src/view/style
+    4.2 cada package tem como respectivo objetivo:
+        4.2.1 scr/control deve conter todas as classes referentes a camada controle do padrão MVC. As classes daqui serão responsáveis por manter os objetos criados a partir das classes contidas no packages src/model.
+            4.2.1.1 scr/control/action deve conter classes que tratarão os eventos, adicionando e retirando comportamentos ao mouse, quando acionados pelo usuário quando este interagir com os componentes da página.
+            4.2.1.2 scr/control/assembler deve conter classes que criarão/montarão os objetos na página html, tanto na workspace (representada por um elemento html sgv), como direto no corpo da aplicação, montando modals e panels.
+                4.2.1.2.1 scr/control/assembler/form deve armazenar classes responsáveis por montar/criar e configurar componentes html referete ao menu de criação/configuração de uma nova tabela na workspace.
+                4.2.1.2.2 scr/control/assembler/relationship deve armazenar classes responsáveis por montar/criar e configurar componentes via DOM, na workspace (svg) referentes a representação gráfica de um relacionamento entre duas tabelas.
+                4.2.1.2.3 scr/control/assembler/table deve armazenar classes responsáveis por montar/criar e configurar componentes via DOM, na workspace (svg) referentes a representação gráfica de uma tabela.
+            4.2.1.3 scr/control/handler deve conter classes que serão acionadas quando o usuário realizar interações visando alterar algum componente ou objeto na aplicação.
+                4.2.1.3.1 scr/control/handler/form deve armazenar classes responsáveis por manipular elementos HTLM, via DOM, dos formulários, conforme a interação do usuário.
+                4.2.1.3.2 scr/control/handler/relationship deve armazenar classes responsáveis por manipular elementos HTLM svg, via DOM, dos componentes gráficos que representam um relacionamento entre duas tabelas, conforme a interação do usuário.
+                4.2.1.3.3 scr/control/handler/table deve armazenar classes responsáveis por manipular elementos HTLM svg, via DOM, dos componentes gráficos que representam uma tabela, conforme a interação do usuário.
+            4.2.1.4 scr/control/config deve armazenar scripts de configurações necessárias para inicialização adequada dos componentes da aplicação.
+            4.2.1.5 scr/control/util deve armazenas classes com funcionalidades de automação de funcionalidades específicas para realização de algum controle no escopo da cama controle.
+        4.2.2 scr/enum deve conter enumerations a serem utilizados como filtros e parâmetros em todo o código.
+        4.2.3 src/model deve conter classes que representação objetos a serem mantidos ao longo da utilização da aplicação pelo usuário.
+            4.2.3.1 src/model/relationship deve conter classes que manterão os estados e as ações(básicas) de relacionamentos.
+            4.2.3.2 src/model/table deve conter classes que manterão os estados e as ações(básicas) de tabelas.
+        4.2.4 src/util deve conter classes utilitárias para facilidade de manipulações diversas.
+        4.2.5 scr/view deve conter arquivos para configurar css, para acomodar imagens a serem carregadas na página, modals html referentes a componetes pré-constituídos entre outros.
+    4.3 As classes model, que representarão tanto os relacionamentos (RelationshipModel) quanto as tabelas (TableModel) deverão serguir as seguintes regras:
+        4.3.1 ambas as classes, TableModel e RelationshipModel, terão como superclasse a classe SVGModel.
+            4.3.1.1 a classe  SVGModel será responsável por manter vínculo entre as instâncias das classes e os seus respectivos elementos HTML sgv
+            4.3.1.2 a classe  SVGModel será composta pelos atributos, todos privados: identification, coordinate (instância da classe Vertex definida posteriormente), css_class e svgElement (representa o elemento html svg)
+            4.3.1.3 a classe vertex armazerão as coordenadas de qualquer vértice a ser ultilizado na workspace (elemento html svg).
+                4.3.1.3.1 A classe Vertex será composta pelos atributos, todos privados, x e y.
+        4.3.2 A classe TableModel armazenará dados e comportamentos que proporcionará a manutenção de gráficos , na workspace, e no formulário de manutenção do dados da tabela.
+        4.3.3 A classe TableModel será compostas pelas constantes: 
+			• tableMasckAreaCSS – recebe, por padrão o valor SVGTableElementsCSSClassEnum.TABLE_MASK;
+			• tableNameAreaCSS– recebe, por padrão o valor SVGTableElementsCSSClassEnum.NAME_AREA;
+			• tableAttributeAreaCSS– recebe, por padrão o valor SVGTableElementsCSSClassEnum.LOGICAL_PHISICAL_TABLE;
+			• tableNameTextCSS– recebe, por padrão o valor SVGTableElementsCSSClassEnum.TABLE_NAME_TEXT;
+			• tableMasckFactorId– recebe, por padrão o valor SVGElementIdEnum.MASCK;
+			• tableNameAreaFactorId – recebe, por padrão o valor SVGElementIdEnum.TABLE_NAME_AREA;
+			• tablePrimaryKeyAreaFactorId – recebe, por padrão o valor SVGElementIdEnum.PRIMARY_KEY_AREA;
+			• tableAttributeAreaFactorId – recebe, por padrão o valor SVGElementIdEnum.ATTRIBUTE_AREA;
+			• tableNameTextFactorId – recebe, por padrão o valor SVGElementIdEnum.TABLE_NAME_TEXT;
+        4.3.4 além das constantes, a classe TableModel também será compostas pelos atributos privados: 
+			• tableMasck – será inicializado com uma instância da classe TableTextAreaModel (especificada mais para frente). 
+				◦ Serão passados para o construtor os seguintes parâmetros: a instância da classe TableModel (this), null, tableMasckAreaCSS e tableMasckFactorId;
+			• nameArea – será inicializado com uma instância da classe TableTextAreaModel (especificada mais para frente). 
+				◦ Serão passados para o construtor os seguintes parâmetros: a instância da classe TableModel (this), null, tableNameAreaCSS e tableNameAreaFactorId;
+			• primaryKeyArea – será inicializado com uma instância da classe TableTextAreaModel (especificada mais para frente). 
+				◦ Serão passados para o construtor os seguintes parâmetros: a instância da classe TableModel (this), this.nameArea, tableAttributeAreaCSS e tablePrimaryKeyAreaFactorId;
+			• attributeArea – será inicializado com uma instância da classe TableTextAreaModel (especificada mais para frente). 
+				◦ Serão passados para o construtor os seguintes parâmetros: a instância da classe TableModel (this), this.primaryKeyArea, tableAttributeAreaCSS e tableAttributeAreaFactorId;
+			• tableName – será inicializado com uma instância da TableNameText (especificada mais para frente). 
+				◦ Serão passados para o construtor os seguintes parâmetros: a instância da classe this.nameArea, tableName, tableNameTextCSS e tableNameTextFactorId;
+			• tablePrimaryKeyList – será um Map<string, TableAttributeText> (TableAttributeText será especificado mais para frente)
+				◦ representa a lista de atributos chave que uma tabela pode ter.
+			• tableAttributeList– será um Map<string, TableAttributeText> (TableAttributeText será especificado mais para frente).
+				◦ representa a lista de atributos não chave que uma tabela pode ter.
+			• rootBasePoinList – será um Map<string, Vertex>.
+				◦ representa uma lista de vértices cálculado ao redor da borda gráfica do elemento html svg que representara a tabela graficamente.
+			• intenalAngleList – será um Map<string, double>.
+				◦ Representa uma lista de ângulos radianos do centro médio do para pontos específico na borda do gráfico que ilustra uma tabela na workspace.
+			• relationshipAsPrimaryTableList – será um Map<string, RelationshipModel> ( RelationshipModel será especificado mais para frente).
+				◦ Representa a lista de RelationshipModel (relacionamentos) nos quais a tabela em questão está como primeira tabela, ou tabela mãe (parent).
+			• relationshipAsSecondaryTableList– será um Map<string, RelationshipModel> ( RelationshipModel será especificado mais para frente).
+				◦ Representa a lista de RelationshipModel (relacionamentos) nos quais a tabela em questão está como primeira tabela, ou tabela mãe (parent).
+			• isDraggable – será do tipo bool.
+				◦ Representa uma flag para indicar se o objeto gráfico (elemento html svg) da tabela poderá ser arrastado pelo usuário.
+			• isSelected – será do tipo bool.
+				◦ Representa uma flag para indicar se o objeto gráfico (elemento html svg) da tabela está selecionado pelo usuário.
+        4.3.5 Além das constantes e dos atributos, a classe deverá ter seus métodos get e set mapara manipulação dos atributos e outros métodos que vierem a ser necessários para manipulação do objeto pela usabilidade da aplicação.
+        4.3.6 A classe TableTextAreaModel deverá implementar as seguintes características:
+            4.3.6.1 A classe  TableTextAreaModel deverá ser uma subclasse da classe SVGModel.
+            4.3.6.2 O construtor da classe deverá exigir os parâmetros:
+				• tableModel, do tipo TableModel;
+				• tableTextAreaAbove, do tipo TableTextAreaModel;
+				• tableCssClass, do tipo string;
+				• areaObjectTypeId, do tipo string.
+            4.3.6.3 A classe  TableTextAreaModel se relacionará com a classe TableModel por meio de composição, ou seja, não poderá ser possível instanciar um objeto da TableTextAreaModel sem que seja passada uma instância da classe TableModel.
+            4.3.6.4 Além do atributo tableModel, do tipo TableModel, a classe  TableTextAreaModel terá o atributo tableTextAreaAbove, do tipo TableTextAreaModel.
+				• Esse atributo tem como objetivo facilitar o reposicionamento dos compoentens gráficos (elementos html svg) que formam a representação gráfica de uma tabela na workspace.
+            4.3.6.5 No construtor, deverá ser criado um identificador para a instância concatenando-se o identificador, da tableModel fornecida, com o outro parâmetro fornecido areaObjectTypeId
+				• tanto o identificador calculado, como o parâmetro tableCssClass deverão ser passados para a classe mãe com a chama super().
+            4.3.6.6 Todos os atributos da classe  TableTextAreaModel deverão ser privados.
+            4.3.6.7 Além dos atributos, a classe deverá ter seus métodos get e set, para manipulação dos atributos, e outros métodos que vierem a ser necessários para manipulação do objeto pela usabilidade da aplicação.
+        4.3.7 A classe TableNameText deverá implementar as seguintes características:
+            4.3.7.1 A classe TableNameText deverá ser uma subclasse da classe SVGModel.
+            4.3.7.2 O construtor da classe deverá exigir os parâmetros:
+				• tableNameArea, do tipo TableTextAreaModel;
+				• tableName, do tipo string;
+				• tableNameTextClass, do tipo string;
+				• tableNameTextFactorId, do tipo string.
+            4.3.7.3 A classe TableNameText se relacionará com a classe TableTextAreaModel por meio de composição, ou seja, não poderá ser possível instanciar um objeto da TableNameText sem que seja passada uma instância da classe TableTextAreaModel.
+            4.3.7.4 
+            4.3.7.5 Além do atributo tableModel, do tipo  TableTextAreaModel, também terá os atributos:
+				• logicalName, será do tipo string.
+					◦ Esse atributo armazenará o nome lógico da tabela, o qual será apresentado na workspace quando a visão do modelo de dados estiva configurada para lógica.
+				• physicalName, será do tipo string.
+					◦ Esse atributo armazenará o nome físico da tabela, o qual será apresentado na workspace quando a visão do modelo de dados estiva configurada para físico.
+            4.3.7.6 No construtor, deverá ser criado um identificador para a instância concatenando-se o identificador da tableModel contida na tableNameArea fornecida, com outro parâmetro fornecido: tableNameTextFactorId
+				• tanto o identificador criado, como o parâmetro tableNameTextCss deverão ser passados para a classe mãe com a chama super()
+            4.3.7.7 o atributo logicalName receberá o valor do parametro tableName.
+            4.3.7.8 o atributo physicalName receberá valor nulo.
+            4.3.7.9 Todos os atributos da classe  TableNameText deverão ser privados.
+            4.3.7.10 Além dos atributos, a classe deverá ter seus métodos get e set, para manipulação dos atributos, e outros métodos que vierem a ser necessários para manipulação do objeto pela usabilidade da aplicação.
+        4.3.8 A classe TableAttributeText deverá implementar as seguintes características:
+            4.3.8.1 A classe TableAttributeText deverá ser uma subclasse da classe SVGModel.
+            4.3.8.2 O construtor da classe deverá exigir os parâmetros:
+				• tableTextArea, do tipo TableTextAreaModel;
+				• tableAttibuteTextCSS, do tipo string;
+				• tableAttributeTextFactorId, do tipo string.
+            4.3.8.3 A classe TableAttributeText se relacionará com a classe TableTextAreaModel por meio de composição, ou seja, não poderá ser possível instanciar um objeto da TableAttributeText sem que seja passada uma instância da classe TableTextAreaModel.
+            4.3.8.4 Além do atributo tableTextArea, do tipo TableTextAreaModel, também terá os atributos:
+				• logicalName, será do tipo string.
+					◦ Esse atributo armazenará o nome lógico do atributo, o qual será apresentado na workspace quando a visão do modelo de dados estiva configurada para lógica.
+				• physicalName, será do tipo string.
+					◦ Esse atributo armazenará o nome físico da atributo, o qual será apresentado na workspace quando a visão do modelo de dados estiva configurada para físico.
+				• IsNull, será do tipo lógico (bool).
+					◦ Representa se um atributo de uma tabela, que está sendo modelada, pode recebe valores nulos, ou seja, o atributo é nullable.
+				• Definition, será do tipo text.
+					◦ Representa a definição do atributo da tabela que está sendo modelada. O texto deve comportar quande quantidade de caracteres além de quebras de linhas.
+				• example, será do tipo text.
+					◦ Representa a exemplos de representações de valores que o atributo da tabela modelada pode aceitar, deverá ser usado, ou quando o domínio é muito grande, ou quando os valores não informados não tem domínio definido.
+				• domain, será do tipo text.
+					◦ Representa a exemplos de representações de todos os valores possíveis que o atributo da tabela modelada pode aceitar.
+				• DataType, será do tipo inteiro.
+					◦ Representa um código de um tipo de dado que o atributo da tabela poderá aceitar. Como se trata de um modelador de uso geral, será permitido ao usuário fornecer o conjunto de data types utilizado pelo banco de dados para o qual o modelo será feito, esse conjunto deverá ser composto por um código e um texto indicando o tipo do dado.
+				• Size, tipo string;
+					◦ representa o tamanho limitador do valor a ser fornecido para o atributo a ser modelado, como o tamanho é orientado ao tipo de dados (ex. Char, decimal, numeric) o campo size será string.
+				• IsPrimaryKey, será do tipo lógico (bool).
+					◦ Flag que indicará se o atributo deverá ser tratada como chave primária (true) ou atributo não chave (false).
+				• IsForeignKey, , será do tipo lógico (bool).
+					◦ Flag que indicará se o atributo tem como origem outra tabela (instância da classe TableModel).
+            4.3.8.5 No construtor, deverá ser criado um identificador para a instância concatenando-se o identificador da tableModel contida na tableTextArea fornecida, com outro parâmetro fornecido: tableAttributeTextFactorId
+				• tanto o identificador criado, como o parâmetro tableAttributeTExtCSS deverão ser passados para a classe mãe com a chama super()
+            4.3.8.6 com exceção do atributo tableTextArea, que recebera o parâmetro de mesmo nome passado, todos os outros atributos inicializaram com valores nulos.
+            4.3.8.7 Todos os atributos da classe TableNameText deverão ser privados.
+            4.3.8.8 Além dos atributos, a classe deverá ter seus métodos get e set, para manipulação dos atributos, e outros métodos que vierem a ser necessários para manipulação do objeto pela usabilidade da aplicação.

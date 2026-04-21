@@ -1,0 +1,303 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body), sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+body {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display), sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.home-page {
+  display: grid;
+  gap: 1rem;
+  max-width: 48rem;
+  padding: 3rem;
+}
+
+.modeler-layout {
+  display: grid;
+  grid-template-columns: 18rem 1fr 20rem;
+  min-height: 100vh;
+  background: #f7f9fb;
+}
+
+.modeler-panel {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #f0f4f7;
+}
+
+.modeler-panel--right {
+  background: #e8eff3;
+}
+
+.modeler-panel__eyebrow {
+  margin: 0;
+  color: #566166;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modeler-panel__title {
+  margin: 0;
+  color: #2a3439;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.modeler-panel__copy {
+  margin: 0;
+  color: #566166;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.modeler-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.modeler-toolbar__button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  background: linear-gradient(135deg, #0053db, #0048c1);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modeler-toolbar__button--ghost {
+  background: #dbe1ff;
+  color: #0048bf;
+}
+
+.modeler-toolbar__button--toggle-active {
+  background: linear-gradient(135deg, #0f4bb8, #003b98);
+  color: #ffffff;
+}
+
+.modeler-toolbar__button--danger {
+  background: rgba(173, 52, 62, 0.12);
+  color: #8f2730;
+}
+
+.modeler-canvas-shell {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+  padding: 1.25rem;
+  gap: 1rem;
+  background: #f7f9fb;
+}
+
+.modeler-canvas-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1.25rem;
+  background: #e8eff3;
+}
+
+.modeler-canvas-toolbar__title {
+  margin: 0;
+  color: #2a3439;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.modeler-canvas-toolbar__meta {
+  margin: 0;
+  color: #566166;
+  font-size: 0.875rem;
+}
+
+.modeler-canvas-frame {
+  position: relative;
+  min-height: 70vh;
+  border-radius: 1.75rem;
+  background:
+    radial-gradient(circle at top left, rgba(0, 83, 219, 0.08), transparent 24rem),
+    #f7f9fb;
+  overflow: hidden;
+}
+
+.modeler-canvas {
+  width: 100%;
+  min-height: 70vh;
+}
+
+.property-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+}
+
+.property-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.property-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: #566166;
+  font-size: 0.875rem;
+}
+
+.property-form input,
+.property-form select {
+  border: 1px solid rgba(0, 83, 219, 0.15);
+  border-radius: 0.4rem;
+  padding: 0.85rem 0.95rem;
+  background: #ffffff;
+  color: #2a3439;
+  font: inherit;
+}
+
+.property-form input:focus,
+.property-form select:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(0, 83, 219, 0.2);
+}
+
+.property-form__checkbox {
+  display: flex !important;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.property-form__checkbox input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
+.schema-card-layer {
+  position: absolute;
+  inset: 1rem;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  pointer-events: none;
+}
+
+.schema-card {
+  width: 16rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px rgba(42, 52, 57, 0.06);
+  overflow: hidden;
+  transform-origin: center;
+}
+
+.schema-card__header {
+  padding: 0.85rem 1rem;
+  background: #eef2f5;
+  color: #2a3439;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.schema-card__body {
+  padding: 0.85rem 1rem 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: #566166;
+  font-size: 0.8125rem;
+}
+
+.relationship-card-layer {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: grid;
+  gap: 0.75rem;
+  width: min(20rem, 100%);
+  pointer-events: none;
+}
+
+.relationship-card {
+  pointer-events: auto;
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 30px rgba(42, 52, 57, 0.06);
+  border: 1px solid rgba(0, 83, 219, 0.08);
+}
+
+.relationship-card[data-selected='true'] {
+  border-color: rgba(0, 83, 219, 0.28);
+  box-shadow: 0 16px 36px rgba(0, 83, 219, 0.14);
+}
+
+.relationship-card__header {
+  color: #2a3439;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.relationship-card__body {
+  margin-top: 0.35rem;
+  color: #566166;
+  font-size: 0.75rem;
+}
+
+.dialog-scrim {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: rgba(42, 52, 57, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.dialog-card {
+  width: min(56rem, 100%);
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+  max-height: calc(100vh - 4rem);
+  overflow: auto;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px rgba(42, 52, 57, 0.06);
+}
+
+.dialog-card pre {
+  margin: 0;
+  overflow: auto;
+  border-radius: 1rem;
+  padding: 1rem;
+  background: #f0f4f7;
+  color: #2a3439;
+  font-size: 0.875rem;
+}
