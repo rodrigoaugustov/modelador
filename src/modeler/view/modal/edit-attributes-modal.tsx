@@ -1,5 +1,6 @@
 'use client'
 
+import { EditAttributesFormHandler } from '@/modeler/control/handler/form/table/edit-attributes-form-handler'
 import type { EditorTableSnapshot } from '@/modeler/types/editor-snapshot'
 
 export function EditAttributesModal({
@@ -17,6 +18,8 @@ export function EditAttributesModal({
   onRemoveAttribute: (attributeId: string) => void
   onApply: () => void
 }) {
+  const editAttributesFormHandler = new EditAttributesFormHandler()
+
   return (
     <div className="dialog-scrim">
       <section className="dialog-card" aria-label="Edit attributes dialog">
@@ -39,15 +42,25 @@ export function EditAttributesModal({
               onChange={(event) =>
                 onChange({
                   ...table,
-                  attributes: table.attributes.map((currentAttribute) =>
-                    currentAttribute.id === attribute.id
-                      ? {
-                          ...currentAttribute,
-                          logicalName: event.target.value,
-                          physicalName: event.target.value || null,
-                        }
-                      : currentAttribute,
-                  ),
+                  attributes: editAttributesFormHandler.updateAttribute(table.attributes, attribute.id, {
+                    logicalName: event.target.value,
+                    physicalName: event.target.value || null,
+                  }),
+                })
+              }
+            />
+
+            <label htmlFor={`attribute-physical-name-${index}`}>Physical name</label>
+            <input
+              id={`attribute-physical-name-${index}`}
+              aria-label="Physical name"
+              value={attribute.physicalName ?? ''}
+              onChange={(event) =>
+                onChange({
+                  ...table,
+                  attributes: editAttributesFormHandler.updateAttribute(table.attributes, attribute.id, {
+                    physicalName: event.target.value || null,
+                  }),
                 })
               }
             />
@@ -60,17 +73,89 @@ export function EditAttributesModal({
               onChange={(event) =>
                 onChange({
                   ...table,
-                  attributes: table.attributes.map((currentAttribute) =>
-                    currentAttribute.id === attribute.id
-                      ? {
-                          ...currentAttribute,
-                          dataType: event.target.value,
-                        }
-                      : currentAttribute,
-                  ),
+                  attributes: editAttributesFormHandler.updateAttribute(table.attributes, attribute.id, {
+                    dataType: event.target.value,
+                  }),
                 })
               }
             />
+
+            <label htmlFor={`attribute-size-${index}`}>Size</label>
+            <input
+              id={`attribute-size-${index}`}
+              aria-label="Size"
+              value={attribute.size ?? ''}
+              onChange={(event) =>
+                onChange({
+                  ...table,
+                  attributes: editAttributesFormHandler.updateAttribute(table.attributes, attribute.id, {
+                    size: event.target.value || null,
+                  }),
+                })
+              }
+            />
+
+            <label htmlFor={`attribute-definition-${index}`}>Definition</label>
+            <input
+              id={`attribute-definition-${index}`}
+              aria-label="Definition"
+              value={attribute.definition ?? ''}
+              onChange={(event) =>
+                onChange({
+                  ...table,
+                  attributes: editAttributesFormHandler.updateAttribute(table.attributes, attribute.id, {
+                    definition: event.target.value || null,
+                  }),
+                })
+              }
+            />
+
+            <label htmlFor={`attribute-example-${index}`}>Example</label>
+            <input
+              id={`attribute-example-${index}`}
+              aria-label="Example"
+              value={attribute.example ?? ''}
+              onChange={(event) =>
+                onChange({
+                  ...table,
+                  attributes: editAttributesFormHandler.updateAttribute(table.attributes, attribute.id, {
+                    example: event.target.value || null,
+                  }),
+                })
+              }
+            />
+
+            <label htmlFor={`attribute-domain-${index}`}>Domain</label>
+            <input
+              id={`attribute-domain-${index}`}
+              aria-label="Domain"
+              value={attribute.domain ?? ''}
+              onChange={(event) =>
+                onChange({
+                  ...table,
+                  attributes: editAttributesFormHandler.updateAttribute(table.attributes, attribute.id, {
+                    domain: event.target.value || null,
+                  }),
+                })
+              }
+            />
+
+            <label>
+              <input
+                aria-label="Not null"
+                type="checkbox"
+                checked={!attribute.isNull}
+                onChange={(event) =>
+                  onChange({
+                    ...table,
+                    attributes: editAttributesFormHandler.updateAttribute(table.attributes, attribute.id, {
+                      isNull: !event.target.checked,
+                    }),
+                  })
+                }
+              />
+              Not null
+            </label>
 
             <button
               className="modeler-toolbar__button modeler-toolbar__button--ghost"

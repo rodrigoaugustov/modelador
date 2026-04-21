@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { ModelerWorkspace } from '@/modeler/view/workspace/modeler-workspace'
 
 describe('ModelerWorkspace', () => {
@@ -56,5 +57,39 @@ describe('ModelerWorkspace', () => {
 
     expect(screen.getByText(/users/i)).toBeInTheDocument()
     expect(screen.getByText(/id/i)).toBeInTheDocument()
+  })
+
+  it('shows the table details action after selecting a schema card in test mode', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <ModelerWorkspace
+        projectId="proj_1"
+        initialProject={{
+          project: { id: 'proj_1', name: 'Sales', description: '' },
+          model: {
+            tables: [
+              {
+                id: 'table_users',
+                logicalName: 'users',
+                physicalName: 'tb_users',
+                schema: 'public',
+                coordinate: { x: 64, y: 64 },
+                attributes: [],
+              },
+            ],
+            relationships: [],
+          },
+          diagram: { viewport: { x: 0, y: 0, zoom: 1 } },
+          metadata: { viewMode: 'logical', postgresVersion: 'default' },
+        }}
+      />,
+    )
+
+    await user.click(screen.getByText(/^users$/i))
+
+    await user.click(screen.getByRole('button', { name: /edit table details/i }))
+
+    expect(screen.getByRole('heading', { name: /edit table details:/i })).toBeInTheDocument()
   })
 })

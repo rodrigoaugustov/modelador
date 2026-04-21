@@ -23,4 +23,19 @@ export class EditAttributesFormHandler {
   removeAttribute(attributes: EditorAttributeSnapshot[], attributeId: string): EditorAttributeSnapshot[] {
     return attributes.filter((attribute) => attribute.id !== attributeId)
   }
+
+  updateAttribute(
+    attributes: EditorAttributeSnapshot[],
+    attributeId: string,
+    patch: Partial<EditorAttributeSnapshot>,
+  ): EditorAttributeSnapshot[] {
+    return attributes.map((attribute) =>
+      attribute.id === attributeId
+        ? {
+            ...attribute,
+            ...patch,
+          }
+        : attribute,
+    )
+  }
 }

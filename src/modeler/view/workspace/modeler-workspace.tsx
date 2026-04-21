@@ -8,6 +8,7 @@ import { createTableNodeDefinition } from '@/modeler/control/assembler/table/tab
 import { ConfigureRelationshipFormHandler } from '@/modeler/control/handler/form/relationship/configure-relationship-form-handler'
 import { CreateTableFormHandler } from '@/modeler/control/handler/form/table/create-table-form-handler'
 import { EditAttributesFormHandler } from '@/modeler/control/handler/form/table/edit-attributes-form-handler'
+import { EditTableDetailsFormHandler } from '@/modeler/control/handler/form/table/edit-table-details-form-handler'
 import { TableSelectionController } from '@/modeler/control/handler/table/table-selection-controller'
 import { WorkspaceController } from '@/modeler/control/handler/workspace/workspace-controller'
 import { RelationshipModel } from '@/modeler/model/relationship/relationship-model'
@@ -22,6 +23,7 @@ import { ConfigureRelationshipModal } from '@/modeler/view/modal/configure-relat
 import { CreateTableModal } from '@/modeler/view/modal/create-table-modal'
 import { DDLPreviewModal } from '@/modeler/view/modal/ddl-preview-modal'
 import { EditAttributesModal } from '@/modeler/view/modal/edit-attributes-modal'
+import { EditTableDetailsModal } from '@/modeler/view/modal/edit-table-details-modal'
 import { ProjectSidebar } from '@/modeler/view/panel/project-sidebar'
 import { PropertyPanel } from '@/modeler/view/panel/property-panel'
 
@@ -159,15 +161,18 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   const createTableFormHandler = useMemo(() => new CreateTableFormHandler(), [])
   const configureRelationshipFormHandler = useMemo(() => new ConfigureRelationshipFormHandler(), [])
   const editAttributesFormHandler = useMemo(() => new EditAttributesFormHandler(), [])
+  const editTableDetailsFormHandler = useMemo(() => new EditTableDetailsFormHandler(), [])
   const [tables, setTables] = useState(() => normalizeTables(initialProject.model.tables))
   const [relationships, setRelationships] = useState(() => initialProject.model.relationships ?? [])
   const [graphReady, setGraphReady] = useState(false)
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
   const [isAddingTable, setIsAddingTable] = useState(false)
   const [isEditingAttributes, setIsEditingAttributes] = useState(false)
+  const [isEditingTableDetails, setIsEditingTableDetails] = useState(false)
   const [isConfiguringRelationship, setIsConfiguringRelationship] = useState(false)
   const [tableDraft, setTableDraft] = useState<Omit<EditorTableSnapshot, 'id' | 'coordinate'> | null>(null)
   const [attributeDraftTable, setAttributeDraftTable] = useState<EditorTableSnapshot | null>(null)
+  const [tableDetailsDraft, setTableDetailsDraft] = useState<EditorTableSnapshot | null>(null)
   const [relationshipDraft, setRelationshipDraft] = useState<EditorRelationshipSnapshot | null>(null)
   const [ddl, setDdl] = useState<string | null>(null)
   const selectedTable = tables.find((table) => table.id === selectedTableId) ?? null
@@ -376,6 +381,34 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     setAttributeDraftTable(null)
   }
 
+  async function handleApplyTableDetails() {
+    if (!tableDetailsDraft) {
+      return
+    }
+
+    const nextTables = tables.map((table) =>
+      table.id === tableDetailsDraft.id
+        ? editTableDetailsFormHandler.apply(table, {
+            logicalName: tableDetailsDraft.logicalName,
+            physicalName: tableDetailsDraft.physicalName,
+            schema: tableDetailsDraft.schema,
+          })
+        : table,
+    )
+    const nextSnapshot = {
+      ...snapshot,
+      model: {
+        ...snapshot.model,
+        tables: nextTables,
+      },
+    }
+
+    await persistSnapshot(nextSnapshot)
+    setTables(nextTables)
+    setIsEditingTableDetails(false)
+    setTableDetailsDraft(null)
+  }
+
   async function handleCreateRelationship() {
     if (!relationshipDraft) {
       return
@@ -493,6 +526,18 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
                 className="modeler-toolbar__button modeler-toolbar__button--ghost"
                 type="button"
                 onClick={() => {
+                  setTableDetailsDraft(structuredClone(selectedTable))
+                  setIsEditingTableDetails(true)
+                }}
+              >
+                Edit table details
+              </button>
+            ) : null}
+            {selectedTable ? (
+              <button
+                className="modeler-toolbar__button modeler-toolbar__button--ghost"
+                type="button"
+                onClick={() => {
                   setAttributeDraftTable(structuredClone(selectedTable))
                   setIsEditingAttributes(true)
                 }}
@@ -570,6 +615,17 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
             )
           }
           onApply={() => void handleApplyAttributeChanges()}
+        />
+      ) : null}
+      {isEditingTableDetails && tableDetailsDraft ? (
+        <EditTableDetailsModal
+          table={tableDetailsDraft}
+          onClose={() => {
+            setIsEditingTableDetails(false)
+            setTableDetailsDraft(null)
+          }}
+          onChange={setTableDetailsDraft}
+          onApply={() => void handleApplyTableDetails()}
         />
       ) : null}
       {isConfiguringRelationship && relationshipDraft ? (
