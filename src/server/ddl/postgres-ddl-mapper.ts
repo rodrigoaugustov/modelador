@@ -1,4 +1,5 @@
 import type { EditorProjectSnapshot } from '@/modeler/types/editor-snapshot'
+import { formatPostgresDataType } from '@/server/catalog/postgres-data-types'
 
 type PostgresColumn = {
   id: string
@@ -25,7 +26,10 @@ export function mapProjectToPostgresTables(snapshot: ValidationSnapshot) {
     const columns: PostgresColumn[] = (table.attributes ?? []).map((attribute) => ({
       id: attribute.id,
       name: attribute.physicalName ?? attribute.logicalName,
-      dataType: attribute.dataType ?? 'text',
+      dataType: formatPostgresDataType({
+        code: attribute.dataType,
+        size: attribute.size,
+      }),
       isNullable: attribute.isNull,
       isPrimaryKey: attribute.isPrimaryKey,
     }))
@@ -51,7 +55,7 @@ export function mapProjectToPostgresTables(snapshot: ValidationSnapshot) {
         return [
           {
             column: currentColumn.name,
-            referencesTable: referencedTable.physicalName ?? referencedTable.logicalName,
+            referencesTable: `${referencedTable.schema}.${referencedTable.physicalName ?? referencedTable.logicalName}`,
             referencesColumn: referencedColumn.physicalName ?? referencedColumn.logicalName,
             onDelete: relationship.onDelete,
             onUpdate: relationship.onUpdate,
@@ -60,7 +64,7 @@ export function mapProjectToPostgresTables(snapshot: ValidationSnapshot) {
       })
 
     return {
-      tableName: table.physicalName ?? table.logicalName,
+      tableName: `${table.schema}.${table.physicalName ?? table.logicalName}`,
       columns,
       primaryKeys: columns.filter((column) => column.isPrimaryKey).map((column) => column.name),
       foreignKeys,

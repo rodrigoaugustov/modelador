@@ -1,4 +1,5 @@
 import type { EditorProjectSnapshot } from '@/modeler/types/editor-snapshot'
+import { isSupportedPostgresDataType } from '@/server/catalog/postgres-data-types'
 
 type ValidationResult = {
   isValid: boolean
@@ -11,8 +12,12 @@ export function validateProjectModel(snapshot: ValidationSnapshot): ValidationRe
   const errors: string[] = []
   const seenTableNames = new Set<string>()
   const tableIds = new Set(snapshot.model.tables.map((table) => table.id))
+  const tablesById = new Map(snapshot.model.tables.map((table) => [table.id, table]))
   const attributeIdsByTable = new Map(
     snapshot.model.tables.map((table) => [table.id, new Set((table.attributes ?? []).map((attribute) => attribute.id))]),
+  )
+  const attributesByTable = new Map(
+    snapshot.model.tables.map((table) => [table.id, new Map((table.attributes ?? []).map((attribute) => [attribute.id, attribute]))]),
   )
 
   for (const table of snapshot.model.tables) {
@@ -44,6 +49,10 @@ export function validateProjectModel(snapshot: ValidationSnapshot): ValidationRe
       }
 
       seen.add(attributeName)
+
+      if (attribute.dataType && !isSupportedPostgresDataType(attribute.dataType)) {
+        errors.push(`Unsupported PostgreSQL data type ${attribute.dataType} in table ${table.id}`)
+      }
     }
   }
 
@@ -62,6 +71,22 @@ export function validateProjectModel(snapshot: ValidationSnapshot): ValidationRe
 
     if (!secondaryAttributes?.has(relationship.secondaryAttributeId)) {
       errors.push(`Relationship ${relationship.id} references an unknown secondary attribute`)
+    }
+
+    if (!relationship.enforceConstraint) {
+      continue
+    }
+
+    const primaryAttribute = attributesByTable.get(relationship.primaryTableId)?.get(relationship.primaryAttributeId)
+    const primaryTable = tablesById.get(relationship.primaryTableId)
+
+    if (
+      primaryTable &&
+      primaryAttribute &&
+      relationship.relationshipType !== 'many-to-many' &&
+      !primaryAttribute.isPrimaryKey
+    ) {
+      errors.push(`Relationship ${relationship.id} must reference a primary key or unique parent column`)
     }
   }
 
