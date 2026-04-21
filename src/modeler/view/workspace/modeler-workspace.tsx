@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import { createProjectLocalStore } from '@/lib/local/indexeddb-project-store'
 import { createTableNodeDefinition } from '@/modeler/control/assembler/table/table-node-factory'
 import { CreateTableFormHandler } from '@/modeler/control/handler/form/table/create-table-form-handler'
+import { EditAttributesFormHandler } from '@/modeler/control/handler/form/table/edit-attributes-form-handler'
 import { TableSelectionController } from '@/modeler/control/handler/table/table-selection-controller'
 import { WorkspaceController } from '@/modeler/control/handler/workspace/workspace-controller'
 import { TableModel } from '@/modeler/model/table/table-model'
@@ -12,6 +13,7 @@ import { TableAttributeText } from '@/modeler/model/table/text/table-attribute-t
 import type { EditorProjectSnapshot, EditorTableSnapshot } from '@/modeler/types/editor-snapshot'
 import { CreateTableModal } from '@/modeler/view/modal/create-table-modal'
 import { DDLPreviewModal } from '@/modeler/view/modal/ddl-preview-modal'
+import { EditAttributesModal } from '@/modeler/view/modal/edit-attributes-modal'
 import { ProjectSidebar } from '@/modeler/view/panel/project-sidebar'
 import { PropertyPanel } from '@/modeler/view/panel/property-panel'
 
@@ -81,12 +83,16 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   } | null>(null)
   const localStore = useMemo(() => createProjectLocalStore(), [])
   const createTableFormHandler = useMemo(() => new CreateTableFormHandler(), [])
+  const editAttributesFormHandler = useMemo(() => new EditAttributesFormHandler(), [])
   const [tables, setTables] = useState(() => normalizeTables(initialProject.model.tables))
   const [graphReady, setGraphReady] = useState(false)
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
   const [isAddingTable, setIsAddingTable] = useState(false)
+  const [isEditingAttributes, setIsEditingAttributes] = useState(false)
   const [tableDraft, setTableDraft] = useState<Omit<EditorTableSnapshot, 'id' | 'coordinate'> | null>(null)
+  const [attributeDraftTable, setAttributeDraftTable] = useState<EditorTableSnapshot | null>(null)
   const [ddl, setDdl] = useState<string | null>(null)
+  const selectedTable = tables.find((table) => table.id === selectedTableId) ?? null
 
   const snapshot = useMemo(
     () => ({
@@ -239,11 +245,11 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
       },
     }
 
+    await persistSnapshot(nextSnapshot)
     setTables(nextTables)
     setIsAddingTable(false)
     setTableDraft(null)
     setSelectedTableId(tableId)
-    await persistSnapshot(nextSnapshot)
   }
 
   async function handleGenerateDDL() {
@@ -257,6 +263,26 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
 
     const body = await response.json()
     setDdl(body.ddl)
+  }
+
+  async function handleApplyAttributeChanges() {
+    if (!attributeDraftTable) {
+      return
+    }
+
+    const nextTables = tables.map((table) => (table.id === attributeDraftTable.id ? attributeDraftTable : table))
+    const nextSnapshot = {
+      ...snapshot,
+      model: {
+        ...snapshot.model,
+        tables: nextTables,
+      },
+    }
+
+    await persistSnapshot(nextSnapshot)
+    setTables(nextTables)
+    setIsEditingAttributes(false)
+    setAttributeDraftTable(null)
   }
 
   return (
@@ -319,6 +345,18 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
             >
               Add table
             </button>
+            {selectedTable ? (
+              <button
+                className="modeler-toolbar__button modeler-toolbar__button--ghost"
+                type="button"
+                onClick={() => {
+                  setAttributeDraftTable(structuredClone(selectedTable))
+                  setIsEditingAttributes(true)
+                }}
+              >
+                Edit attributes
+              </button>
+            ) : null}
             <button className="modeler-toolbar__button modeler-toolbar__button--ghost" type="button" onClick={() => void handleGenerateDDL()}>
               Generate DDL
             </button>
@@ -334,6 +372,37 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
           }}
           onChange={setTableDraft}
           onSubmit={() => void handleSaveTable()}
+        />
+      ) : null}
+      {isEditingAttributes && attributeDraftTable ? (
+        <EditAttributesModal
+          table={attributeDraftTable}
+          onClose={() => {
+            setIsEditingAttributes(false)
+            setAttributeDraftTable(null)
+          }}
+          onChange={setAttributeDraftTable}
+          onAddColumn={() =>
+            setAttributeDraftTable((currentDraft) =>
+              currentDraft
+                ? {
+                    ...currentDraft,
+                    attributes: editAttributesFormHandler.addAttribute(currentDraft.attributes),
+                  }
+                : currentDraft,
+            )
+          }
+          onRemoveAttribute={(attributeId) =>
+            setAttributeDraftTable((currentDraft) =>
+              currentDraft
+                ? {
+                    ...currentDraft,
+                    attributes: editAttributesFormHandler.removeAttribute(currentDraft.attributes, attributeId),
+                  }
+                : currentDraft,
+            )
+          }
+          onApply={() => void handleApplyAttributeChanges()}
         />
       ) : null}
       {ddl ? <DDLPreviewModal ddl={ddl} onClose={() => setDdl(null)} /> : null}

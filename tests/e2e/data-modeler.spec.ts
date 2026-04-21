@@ -12,6 +12,15 @@ test('user creates a project, edits a model, saves, reopens, and generates ddl',
   await page.getByLabel('Table Name').fill('users')
   await page.getByRole('button', { name: /create table/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/users/i)).toBeVisible()
+
+  await page.getByRole('button', { name: /edit attributes/i }).click()
+  await page.getByRole('button', { name: /add column/i }).click()
+  await page.getByLabel('Column name').last().fill('email')
+  await page.getByRole('button', { name: /apply schema changes/i }).click()
+  await expect(page.getByRole('heading', { name: /edit attributes:/i })).toHaveCount(0)
+  await page.reload()
+  await expect(page.getByTestId('modeler-canvas').getByText(/email/i)).toBeVisible()
+
   const node = page.locator('.x6-node').first()
   const box = await node.boundingBox()
 
