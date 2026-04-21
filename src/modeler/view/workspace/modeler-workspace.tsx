@@ -10,7 +10,9 @@ import { CreateTableFormHandler } from '@/modeler/control/handler/form/table/cre
 import { EditAttributesFormHandler } from '@/modeler/control/handler/form/table/edit-attributes-form-handler'
 import { EditTableDetailsFormHandler } from '@/modeler/control/handler/form/table/edit-table-details-form-handler'
 import { TableSelectionController } from '@/modeler/control/handler/table/table-selection-controller'
+import { ViewModeController } from '@/modeler/control/handler/workspace/view-mode-controller'
 import { WorkspaceController } from '@/modeler/control/handler/workspace/workspace-controller'
+import { ViewMode } from '@/modeler/enum/view-mode'
 import { RelationshipModel } from '@/modeler/model/relationship/relationship-model'
 import { TableModel } from '@/modeler/model/table/table-model'
 import { TableAttributeText } from '@/modeler/model/table/text/table-attribute-text'
@@ -45,6 +47,24 @@ function normalizeTables(tables: EditorTableSnapshot[]) {
     coordinate: table.coordinate ?? getDefaultTableCoordinate(index),
     attributes: table.attributes ?? [],
   }))
+}
+
+function resolveSnapshotName(
+  table: Pick<EditorTableSnapshot, 'logicalName' | 'physicalName'>,
+  viewMode: ViewMode,
+) {
+  return viewMode === ViewMode.Physical
+    ? table.physicalName ?? table.logicalName
+    : table.logicalName ?? table.physicalName ?? 'unnamed'
+}
+
+function resolveAttributeSnapshotName(
+  attribute: Pick<EditorTableSnapshot['attributes'][number], 'logicalName' | 'physicalName'>,
+  viewMode: ViewMode,
+) {
+  return viewMode === ViewMode.Physical
+    ? attribute.physicalName ?? attribute.logicalName
+    : attribute.logicalName ?? attribute.physicalName ?? 'unnamed'
 }
 
 function synchronizeForeignKeyFlags(
@@ -108,6 +128,7 @@ function hydrateDomainTable(table: EditorTableSnapshot) {
     x: table.coordinate.x,
     y: table.coordinate.y,
   })
+  domainTable.tableName.physicalName = table.physicalName
 
   for (const attribute of table.attributes) {
     applyAttributeSnapshot(domainTable, attribute)
@@ -162,8 +183,10 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   const configureRelationshipFormHandler = useMemo(() => new ConfigureRelationshipFormHandler(), [])
   const editAttributesFormHandler = useMemo(() => new EditAttributesFormHandler(), [])
   const editTableDetailsFormHandler = useMemo(() => new EditTableDetailsFormHandler(), [])
+  const viewModeController = useMemo(() => new ViewModeController(), [])
   const [tables, setTables] = useState(() => normalizeTables(initialProject.model.tables))
   const [relationships, setRelationships] = useState(() => initialProject.model.relationships ?? [])
+  const [viewMode, setViewMode] = useState<ViewMode>(initialProject.metadata?.viewMode ?? ViewMode.Logical)
   const [graphReady, setGraphReady] = useState(false)
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
   const [isAddingTable, setIsAddingTable] = useState(false)
@@ -185,8 +208,12 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         tables,
         relationships,
       },
+      metadata: {
+        ...(initialProject.metadata ?? { postgresVersion: 'default' }),
+        viewMode,
+      },
     }),
-    [initialProject, relationships, tables],
+    [initialProject, relationships, tables, viewMode],
   )
 
   useEffect(() => {
@@ -278,7 +305,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         coordinate: table.coordinate ?? { x: 64, y: 64 },
       })
 
-      cells.push(graphRef.current.createNode(createTableNodeDefinition(domainTable)))
+      cells.push(graphRef.current.createNode(createTableNodeDefinition(domainTable, viewMode)))
       nextTableMap.set(table.id, domainTable)
     }
 
@@ -294,7 +321,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
 
     graphRef.current.resetCells(cells)
     tablesByIdRef.current = nextTableMap
-  }, [graphReady, relationships, tables])
+  }, [graphReady, relationships, tables, viewMode])
 
   async function persistSnapshot(nextSnapshot: typeof snapshot) {
     await localStore.save(projectId, nextSnapshot)
@@ -461,6 +488,20 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     setSelectedTableId(nextTablesWithFlags.at(-1)?.id ?? null)
   }
 
+  async function handleToggleViewMode() {
+    const nextViewMode = viewModeController.toggle(viewMode)
+    const nextSnapshot = {
+      ...snapshot,
+      metadata: {
+        ...snapshot.metadata,
+        viewMode: nextViewMode,
+      },
+    }
+
+    await persistSnapshot(nextSnapshot)
+    setViewMode(nextViewMode)
+  }
+
   return (
     <>
       <div className="modeler-layout">
@@ -484,11 +525,11 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
                   data-selected={selectedTableId === table.id ? 'true' : 'false'}
                   onClick={() => setSelectedTableId(table.id)}
                 >
-                  <div className="schema-card__header">{table.logicalName}</div>
+                  <div className="schema-card__header">{resolveSnapshotName(table, viewMode)}</div>
                   <div className="schema-card__body">
                     {table.attributes.map((attribute) => (
                       <div key={attribute.id}>
-                        {attribute.logicalName} {attribute.dataType?.toUpperCase() ?? 'TEXT'}
+                        {resolveAttributeSnapshotName(attribute, viewMode)} {attribute.dataType?.toUpperCase() ?? 'TEXT'}
                       </div>
                     ))}
                   </div>
@@ -520,6 +561,13 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
               }}
             >
               Add table
+            </button>
+            <button
+              className="modeler-toolbar__button modeler-toolbar__button--ghost"
+              type="button"
+              onClick={() => void handleToggleViewMode()}
+            >
+              {viewMode === ViewMode.Logical ? 'Switch to physical mode' : 'Switch to logical mode'}
             </button>
             {selectedTable ? (
               <button
