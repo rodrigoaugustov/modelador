@@ -1,4 +1,5 @@
 import { SVGModel } from '@/modeler/model/svg-model'
+import { RelationshipSegment } from '@/modeler/model/relationship/segment/relationship-segment'
 import type { TableModel } from '@/modeler/model/table/table-model'
 import { Vertex } from '@/modeler/model/vertex'
 
@@ -19,6 +20,18 @@ export class RelationshipModel extends SVGModel {
     return new RelationshipModel(args)
   }
 
+  static resolveTypeLabel(type: CreateRelationshipArgs['relationshipType']) {
+    if (type === 'one-to-one') {
+      return '1:1'
+    }
+
+    if (type === 'many-to-many') {
+      return 'N:N'
+    }
+
+    return '1:N'
+  }
+
   isSelected = false
   primaryAttributeId = ''
   secondaryAttributeId = ''
@@ -29,6 +42,7 @@ export class RelationshipModel extends SVGModel {
 
   readonly primaryTable: TableModel
   readonly secondaryTable: TableModel
+  readonly segmentList: RelationshipSegment[]
 
   private constructor(args: CreateRelationshipArgs) {
     super(
@@ -44,5 +58,12 @@ export class RelationshipModel extends SVGModel {
     this.onDelete = args.onDelete ?? 'cascade'
     this.onUpdate = args.onUpdate ?? 'cascade'
     this.enforceConstraint = args.enforceConstraint ?? true
+    this.segmentList = [
+      new RelationshipSegment(
+        new Vertex(args.primaryTable.coordinate.x, args.primaryTable.coordinate.y),
+        new Vertex(args.secondaryTable.coordinate.x, args.secondaryTable.coordinate.y),
+        RelationshipModel.resolveTypeLabel(this.relationshipType),
+      ),
+    ]
   }
 }

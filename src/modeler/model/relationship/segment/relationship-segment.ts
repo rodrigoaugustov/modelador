@@ -4,5 +4,6 @@ export class RelationshipSegment {
   constructor(
     public readonly source: Vertex,
     public readonly target: Vertex,
+    public readonly label: string,
   ) {}
 }

@@ -10,4 +10,30 @@ describe('ConfigureRelationshipFormHandler', () => {
     expect(draft.enforceConstraint).toBe(true)
     expect(draft.onDelete).toBe('cascade')
   })
+
+  it('updates delete and update actions for an existing relationship', () => {
+    const handler = new ConfigureRelationshipFormHandler()
+    const next = handler.applyPatch(
+      {
+        id: 'rel_users_orders',
+        primaryTableId: 'table_users',
+        secondaryTableId: 'table_orders',
+        primaryAttributeId: 'attr_users_id',
+        secondaryAttributeId: 'attr_orders_user_id',
+        relationshipType: 'one-to-many',
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+        enforceConstraint: true,
+      },
+      {
+        onDelete: 'restrict',
+        onUpdate: 'no action',
+        enforceConstraint: false,
+      },
+    )
+
+    expect(next.onDelete).toBe('restrict')
+    expect(next.onUpdate).toBe('no action')
+    expect(next.enforceConstraint).toBe(false)
+  })
 })

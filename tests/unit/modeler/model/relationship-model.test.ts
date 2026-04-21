@@ -40,4 +40,24 @@ describe('RelationshipModel', () => {
     expect(relationship.onUpdate).toBe('restrict')
     expect(relationship.enforceConstraint).toBe(true)
   })
+
+  it('stores relationship segments derived from the connected tables', () => {
+    const source = TableModel.create({ id: 'table_users', name: 'users', x: 0, y: 0 })
+    const target = TableModel.create({ id: 'table_orders', name: 'orders', x: 200, y: 0 })
+
+    const relationship = RelationshipModel.create({
+      id: 'rel_users_orders',
+      primaryTable: source,
+      secondaryTable: target,
+      primaryAttributeId: 'attr_users_id',
+      secondaryAttributeId: 'attr_orders_user_id',
+      relationshipType: 'one-to-many',
+      onDelete: 'cascade',
+      onUpdate: 'cascade',
+      enforceConstraint: true,
+    })
+
+    expect(relationship.segmentList.length).toBeGreaterThan(0)
+    expect(relationship.segmentList[0]?.label).toBe('1:N')
+  })
 })

@@ -32,4 +32,14 @@ export class ConfigureRelationshipFormHandler {
       secondaryAttributeId,
     )
   }
+
+  applyPatch(
+    relationship: EditorRelationshipSnapshot,
+    patch: Partial<EditorRelationshipSnapshot>,
+  ): EditorRelationshipSnapshot {
+    return {
+      ...relationship,
+      ...patch,
+    }
+  }
 }

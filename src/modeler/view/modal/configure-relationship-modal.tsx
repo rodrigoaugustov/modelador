@@ -2,6 +2,14 @@
 
 import type { EditorRelationshipSnapshot, EditorTableSnapshot } from '@/modeler/types/editor-snapshot'
 
+const relationshipTypeOptions: Array<EditorRelationshipSnapshot['relationshipType']> = [
+  'one-to-one',
+  'one-to-many',
+  'many-to-many',
+]
+
+const actionOptions: Array<EditorRelationshipSnapshot['onDelete']> = ['cascade', 'restrict', 'no action', 'set null']
+
 function getAttributeOptions(table: EditorTableSnapshot | undefined) {
   if (!table) {
     return []
@@ -16,12 +24,16 @@ function getAttributeOptions(table: EditorTableSnapshot | undefined) {
 export function ConfigureRelationshipModal({
   draft,
   tables,
+  title = 'Configure Relationship',
+  submitLabel = 'Create Relationship',
   onClose,
   onChange,
   onSubmit,
 }: {
   draft: EditorRelationshipSnapshot
   tables: EditorTableSnapshot[]
+  title?: string
+  submitLabel?: string
   onClose: () => void
   onChange: (draft: EditorRelationshipSnapshot) => void
   onSubmit: () => void
@@ -34,7 +46,7 @@ export function ConfigureRelationshipModal({
   return (
     <div className="dialog-scrim">
       <section className="dialog-card" aria-label="Configure relationship dialog">
-        <h2>Configure Relationship</h2>
+        <h2>{title}</h2>
         <p className="modeler-panel__copy">Select source and target columns to create the referential link.</p>
 
         <div className="property-form">
@@ -117,6 +129,79 @@ export function ConfigureRelationshipModal({
               </option>
             ))}
           </select>
+
+          <label htmlFor="relationship-type">Relationship type</label>
+          <select
+            id="relationship-type"
+            aria-label="Relationship type"
+            value={draft.relationshipType}
+            onChange={(event) =>
+              onChange({
+                ...draft,
+                relationshipType: event.target.value as EditorRelationshipSnapshot['relationshipType'],
+              })
+            }
+          >
+            {relationshipTypeOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+
+          <label htmlFor="relationship-on-delete">On delete</label>
+          <select
+            id="relationship-on-delete"
+            aria-label="On delete"
+            value={draft.onDelete}
+            onChange={(event) =>
+              onChange({
+                ...draft,
+                onDelete: event.target.value as EditorRelationshipSnapshot['onDelete'],
+              })
+            }
+          >
+            {actionOptions.map((option) => (
+              <option key={`delete-${option}`} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+
+          <label htmlFor="relationship-on-update">On update</label>
+          <select
+            id="relationship-on-update"
+            aria-label="On update"
+            value={draft.onUpdate}
+            onChange={(event) =>
+              onChange({
+                ...draft,
+                onUpdate: event.target.value as EditorRelationshipSnapshot['onUpdate'],
+              })
+            }
+          >
+            {actionOptions.map((option) => (
+              <option key={`update-${option}`} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+
+          <label className="property-form__checkbox" htmlFor="relationship-enforce-constraint">
+            <input
+              id="relationship-enforce-constraint"
+              aria-label="Enforce constraint"
+              type="checkbox"
+              checked={draft.enforceConstraint}
+              onChange={(event) =>
+                onChange({
+                  ...draft,
+                  enforceConstraint: event.target.checked,
+                })
+              }
+            />
+            Enforce constraint
+          </label>
         </div>
 
         <div className="modeler-toolbar">
@@ -124,7 +209,7 @@ export function ConfigureRelationshipModal({
             Cancel
           </button>
           <button className="modeler-toolbar__button" type="button" onClick={onSubmit}>
-            Create Relationship
+            {submitLabel}
           </button>
         </div>
       </section>

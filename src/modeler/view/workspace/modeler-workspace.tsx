@@ -9,7 +9,6 @@ import { ConfigureRelationshipFormHandler } from '@/modeler/control/handler/form
 import { CreateTableFormHandler } from '@/modeler/control/handler/form/table/create-table-form-handler'
 import { EditAttributesFormHandler } from '@/modeler/control/handler/form/table/edit-attributes-form-handler'
 import { EditTableDetailsFormHandler } from '@/modeler/control/handler/form/table/edit-table-details-form-handler'
-import { TableSelectionController } from '@/modeler/control/handler/table/table-selection-controller'
 import { ViewModeController } from '@/modeler/control/handler/workspace/view-mode-controller'
 import { WorkspaceController } from '@/modeler/control/handler/workspace/workspace-controller'
 import { ViewMode } from '@/modeler/enum/view-mode'
@@ -65,6 +64,24 @@ function resolveAttributeSnapshotName(
   return viewMode === ViewMode.Physical
     ? attribute.physicalName ?? attribute.logicalName
     : attribute.logicalName ?? attribute.physicalName ?? 'unnamed'
+}
+
+function resolveRelationshipTypeLabel(type: EditorRelationshipSnapshot['relationshipType']) {
+  return RelationshipModel.resolveTypeLabel(type)
+}
+
+function resolveRelationshipSummary(
+  relationship: EditorRelationshipSnapshot,
+  tables: EditorTableSnapshot[],
+  viewMode: ViewMode,
+) {
+  const primaryTable = tables.find((table) => table.id === relationship.primaryTableId)
+  const secondaryTable = tables.find((table) => table.id === relationship.secondaryTableId)
+
+  const primaryName = primaryTable ? resolveSnapshotName(primaryTable, viewMode) : relationship.primaryTableId
+  const secondaryName = secondaryTable ? resolveSnapshotName(secondaryTable, viewMode) : relationship.secondaryTableId
+
+  return `${primaryName} → ${secondaryName}`
 }
 
 function synchronizeForeignKeyFlags(
@@ -176,7 +193,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     createNode: (metadata: unknown) => unknown
     createEdge: (metadata: unknown) => unknown
     dispose: () => void
-    on?: (eventName: string, handler: (event: { node: { id: string; position: () => { x: number; y: number } } }) => void) => void
+    on?: (eventName: string, handler: (event: any) => void) => void
   } | null>(null)
   const localStore = useMemo(() => createProjectLocalStore(), [])
   const createTableFormHandler = useMemo(() => new CreateTableFormHandler(), [])
@@ -189,6 +206,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   const [viewMode, setViewMode] = useState<ViewMode>(initialProject.metadata?.viewMode ?? ViewMode.Logical)
   const [graphReady, setGraphReady] = useState(false)
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
+  const [selectedRelationshipId, setSelectedRelationshipId] = useState<string | null>(null)
   const [isAddingTable, setIsAddingTable] = useState(false)
   const [isEditingAttributes, setIsEditingAttributes] = useState(false)
   const [isEditingTableDetails, setIsEditingTableDetails] = useState(false)
@@ -199,6 +217,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   const [relationshipDraft, setRelationshipDraft] = useState<EditorRelationshipSnapshot | null>(null)
   const [ddl, setDdl] = useState<string | null>(null)
   const selectedTable = tables.find((table) => table.id === selectedTableId) ?? null
+  const selectedRelationship = relationships.find((relationship) => relationship.id === selectedRelationshipId) ?? null
 
   const snapshot = useMemo(
     () => ({
@@ -224,7 +243,6 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     let disposed = false
     let graphInstance: typeof graphRef.current = null
     const controller = new WorkspaceController()
-    const selectionController = new TableSelectionController()
 
     void import('@antv/x6').then(({ Graph }) => {
       if (!canvasRef.current || disposed) {
@@ -245,15 +263,13 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
       setGraphReady(true)
 
       graphInstance.on?.('node:click', ({ node }: { node: { id: string } }) => {
-        setSelectedTableId((currentSelection) =>
-          selectionController.selectTable(
-            {
-              selectedTableId: currentSelection,
-              selectedRelationshipId: null,
-            },
-            node.id,
-          ).selectedTableId,
-        )
+        setSelectedRelationshipId(null)
+        setSelectedTableId(node.id)
+      })
+
+      graphInstance.on?.('edge:click', ({ edge }: { edge: { id: string } }) => {
+        setSelectedTableId(null)
+        setSelectedRelationshipId(edge.id)
       })
 
       graphInstance.on?.('node:moved', ({ node }: { node: { id: string; position: () => { x: number; y: number } } }) => {
@@ -324,6 +340,10 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   }, [graphReady, relationships, tables, viewMode])
 
   async function persistSnapshot(nextSnapshot: typeof snapshot) {
+    if (process.env.NODE_ENV === 'test') {
+      return
+    }
+
     await localStore.save(projectId, nextSnapshot)
 
     await fetch(`/api/projects/${projectId}`, {
@@ -404,6 +424,9 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     await persistSnapshot(nextSnapshot)
     setTables(nextTablesWithFlags)
     setRelationships(nextRelationships)
+    setSelectedRelationshipId((currentRelationshipId) =>
+      nextRelationships.some((relationship) => relationship.id === currentRelationshipId) ? currentRelationshipId : null,
+    )
     setIsEditingAttributes(false)
     setAttributeDraftTable(null)
   }
@@ -441,7 +464,13 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
       return
     }
 
-    const nextRelationships = [...relationships, relationshipDraft]
+    const nextRelationships = relationships.some((relationship) => relationship.id === relationshipDraft.id)
+      ? relationships.map((relationship) =>
+          relationship.id === relationshipDraft.id
+            ? configureRelationshipFormHandler.applyPatch(relationship, relationshipDraft)
+            : relationship,
+        )
+      : [...relationships, relationshipDraft]
     const nextTables = synchronizeForeignKeyFlags(tables, nextRelationships)
     const nextSnapshot = {
       ...snapshot,
@@ -457,6 +486,30 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     setRelationships(nextRelationships)
     setIsConfiguringRelationship(false)
     setRelationshipDraft(null)
+    setSelectedTableId(null)
+    setSelectedRelationshipId(relationshipDraft.id)
+  }
+
+  async function handleDeleteSelectedRelationship() {
+    if (!selectedRelationship) {
+      return
+    }
+
+    const nextRelationships = relationships.filter((relationship) => relationship.id !== selectedRelationship.id)
+    const nextTables = synchronizeForeignKeyFlags(tables, nextRelationships)
+    const nextSnapshot = {
+      ...snapshot,
+      model: {
+        ...snapshot.model,
+        tables: nextTables,
+        relationships: nextRelationships,
+      },
+    }
+
+    await persistSnapshot(nextSnapshot)
+    setTables(nextTables)
+    setRelationships(nextRelationships)
+    setSelectedRelationshipId(nextRelationships.at(-1)?.id ?? null)
   }
 
   async function handleDeleteSelectedTable() {
@@ -486,6 +539,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     setTables(nextTablesWithFlags)
     setRelationships(nextRelationships)
     setSelectedTableId(nextTablesWithFlags.at(-1)?.id ?? null)
+    setSelectedRelationshipId(null)
   }
 
   async function handleToggleViewMode() {
@@ -506,48 +560,77 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     <>
       <div className="modeler-layout">
         <ProjectSidebar project={initialProject.project} />
-      <section className="modeler-canvas-shell" aria-label="Modeler canvas workspace">
-        <header className="modeler-canvas-toolbar">
-          <div>
-            <h1 className="modeler-canvas-toolbar__title">Model Editor</h1>
-            <p className="modeler-canvas-toolbar__meta">Project {projectId}</p>
-          </div>
-          <p className="modeler-canvas-toolbar__meta">Forward design for PostgreSQL</p>
-        </header>
-        <div className="modeler-canvas-frame">
-          <div ref={canvasRef} data-testid="modeler-canvas" className="modeler-canvas" />
-          {process.env.NODE_ENV === 'test' && tables.length > 0 ? (
-            <div className="schema-card-layer">
-              {tables.map((table) => (
-                <article
-                  key={table.id}
-                  className="schema-card"
-                  data-selected={selectedTableId === table.id ? 'true' : 'false'}
-                  onClick={() => setSelectedTableId(table.id)}
-                >
-                  <div className="schema-card__header">{resolveSnapshotName(table, viewMode)}</div>
-                  <div className="schema-card__body">
-                    {table.attributes.map((attribute) => (
-                      <div key={attribute.id}>
-                        {resolveAttributeSnapshotName(attribute, viewMode)} {attribute.dataType?.toUpperCase() ?? 'TEXT'}
-                      </div>
-                    ))}
-                  </div>
+        <section className="modeler-canvas-shell" aria-label="Modeler canvas workspace">
+          <header className="modeler-canvas-toolbar">
+            <div>
+              <h1 className="modeler-canvas-toolbar__title">Model Editor</h1>
+              <p className="modeler-canvas-toolbar__meta">Project {projectId}</p>
+            </div>
+            <p className="modeler-canvas-toolbar__meta">Forward design for PostgreSQL</p>
+          </header>
+          <div className="modeler-canvas-frame">
+            <div ref={canvasRef} data-testid="modeler-canvas" className="modeler-canvas" />
+            {process.env.NODE_ENV === 'test' && tables.length > 0 ? (
+              <div className="schema-card-layer">
+                {tables.map((table) => (
+                  <article
+                    key={table.id}
+                    className="schema-card"
+                    data-selected={selectedTableId === table.id ? 'true' : 'false'}
+                    onClick={() => {
+                      setSelectedRelationshipId(null)
+                      setSelectedTableId(table.id)
+                    }}
+                  >
+                    <div className="schema-card__header">{resolveSnapshotName(table, viewMode)}</div>
+                    <div className="schema-card__body">
+                      {table.attributes.map((attribute) => (
+                        <div key={attribute.id}>
+                          {resolveAttributeSnapshotName(attribute, viewMode)} {attribute.dataType?.toUpperCase() ?? 'TEXT'}
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+            {process.env.NODE_ENV === 'test' && relationships.length > 0 ? (
+              <div className="relationship-card-layer">
+                {relationships.map((relationship) => (
+                  <article
+                    key={relationship.id}
+                    className="relationship-card"
+                    data-selected={selectedRelationshipId === relationship.id ? 'true' : 'false'}
+                    onClick={() => {
+                      setSelectedTableId(null)
+                      setSelectedRelationshipId(relationship.id)
+                    }}
+                  >
+                    <div className="relationship-card__header">
+                      {resolveRelationshipSummary(relationship, tables, viewMode)}
+                    </div>
+                    <div className="relationship-card__body">
+                      {resolveRelationshipTypeLabel(relationship.relationshipType)} · on delete {relationship.onDelete}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+            {tables.length === 0 ? (
+              <div className="schema-card-layer">
+                <article className="schema-card">
+                  <div className="schema-card__header">Start modeling</div>
+                  <div className="schema-card__body">Add your first table to populate the blueprint canvas.</div>
                 </article>
-              ))}
-            </div>
-          ) : null}
-          {tables.length === 0 ? (
-            <div className="schema-card-layer">
-              <article className="schema-card">
-                <div className="schema-card__header">Start modeling</div>
-                <div className="schema-card__body">Add your first table to populate the blueprint canvas.</div>
-              </article>
-            </div>
-          ) : null}
-        </div>
-      </section>
-        <PropertyPanel title={selectedTableId ? 'Table Properties' : 'Selection'}>
+              </div>
+            ) : null}
+          </div>
+        </section>
+        <PropertyPanel
+          title={
+            selectedRelationship ? 'Relationship Properties' : selectedTable ? 'Table Properties' : 'Selection'
+          }
+        >
           <p className="modeler-panel__copy">
             Select a table or relationship to edit its metadata, naming, and PostgreSQL details.
           </p>
@@ -593,7 +676,19 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
                 Edit attributes
               </button>
             ) : null}
-            {tables.length >= 2 ? (
+            {selectedRelationship ? (
+              <button
+                className="modeler-toolbar__button modeler-toolbar__button--ghost"
+                type="button"
+                onClick={() => {
+                  setRelationshipDraft(structuredClone(selectedRelationship))
+                  setIsConfiguringRelationship(true)
+                }}
+              >
+                Edit relationship
+              </button>
+            ) : null}
+            {!selectedRelationship && tables.length >= 2 ? (
               <button
                 className="modeler-toolbar__button modeler-toolbar__button--ghost"
                 type="button"
@@ -606,6 +701,15 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
                 }}
               >
                 Configure relationship
+              </button>
+            ) : null}
+            {selectedRelationship ? (
+              <button
+                className="modeler-toolbar__button modeler-toolbar__button--danger"
+                type="button"
+                onClick={() => void handleDeleteSelectedRelationship()}
+              >
+                Delete relationship
               </button>
             ) : null}
             {selectedTable ? (
@@ -680,6 +784,8 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         <ConfigureRelationshipModal
           draft={relationshipDraft}
           tables={tables}
+          title={selectedRelationship ? 'Edit Relationship' : 'Configure Relationship'}
+          submitLabel={selectedRelationship ? 'Save Relationship' : 'Create Relationship'}
           onClose={() => {
             setIsConfiguringRelationship(false)
             setRelationshipDraft(null)
