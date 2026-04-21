@@ -4,45 +4,67 @@ import { useEffect, useRef } from 'react'
 import { useMemo, useState } from 'react'
 import { createProjectLocalStore } from '@/lib/local/indexeddb-project-store'
 import { createTableNodeDefinition } from '@/modeler/control/assembler/table/table-node-factory'
+import { TableSelectionController } from '@/modeler/control/handler/table/table-selection-controller'
 import { WorkspaceController } from '@/modeler/control/handler/workspace/workspace-controller'
 import { TableModel } from '@/modeler/model/table/table-model'
+import { TableAttributeText } from '@/modeler/model/table/text/table-attribute-text'
+import type { EditorProjectSnapshot, EditorTableSnapshot } from '@/modeler/types/editor-snapshot'
 import { DDLPreviewModal } from '@/modeler/view/modal/ddl-preview-modal'
 import { ProjectSidebar } from '@/modeler/view/panel/project-sidebar'
 import { PropertyPanel } from '@/modeler/view/panel/property-panel'
 
-type WorkspaceTable = {
-  id: string
-  logicalName: string
-  physicalName: string | null
-  attributes?: unknown[]
-  coordinate?: {
-    x: number
-    y: number
-  }
-}
-
 type ModelerWorkspaceProps = {
   projectId: string
-  initialProject: {
-    project: {
-      id: string
-      name: string
-    }
-    model: {
-      tables: WorkspaceTable[]
-      relationships: unknown[]
-    }
-  }
+  initialProject: EditorProjectSnapshot
 }
 
-function normalizeTables(tables: WorkspaceTable[]) {
+function normalizeTables(tables: EditorTableSnapshot[]) {
   return tables.map((table, index) => ({
     ...table,
     coordinate: table.coordinate ?? {
       x: 64 + index * 32,
       y: 64 + index * 24,
     },
+    attributes: table.attributes ?? [],
   }))
+}
+
+function applyAttributeSnapshot(table: TableModel, attribute: EditorTableSnapshot['attributes'][number]) {
+  const targetArea = attribute.isPrimaryKey ? table.primaryKeyArea : table.attributeArea
+  const attributeModel = new TableAttributeText(targetArea, 'table-attribute-text', attribute.id)
+
+  attributeModel.logicalName = attribute.logicalName
+  attributeModel.physicalName = attribute.physicalName
+  attributeModel.dataType = attribute.dataType
+  attributeModel.size = attribute.size
+  attributeModel.isNull = attribute.isNull
+  attributeModel.isPrimaryKey = attribute.isPrimaryKey
+  attributeModel.isForeignKey = attribute.isForeignKey
+  attributeModel.definition = attribute.definition
+  attributeModel.example = attribute.example
+  attributeModel.domain = attribute.domain
+
+  if (attribute.isPrimaryKey) {
+    table.tablePrimaryKeyList.set(attribute.id, attributeModel)
+    return
+  }
+
+  table.tableAttributeList.set(attribute.id, attributeModel)
+}
+
+function hydrateDomainTable(table: EditorTableSnapshot) {
+  const domainTable = TableModel.create({
+    id: table.id,
+    name: table.logicalName,
+    x: table.coordinate.x,
+    y: table.coordinate.y,
+  })
+
+  for (const attribute of table.attributes) {
+    applyAttributeSnapshot(domainTable, attribute)
+  }
+
+  return domainTable
 }
 
 export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspaceProps) {
@@ -58,6 +80,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   const localStore = useMemo(() => createProjectLocalStore(), [])
   const [tables, setTables] = useState(() => normalizeTables(initialProject.model.tables))
   const [graphReady, setGraphReady] = useState(false)
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
   const [isAddingTable, setIsAddingTable] = useState(false)
   const [logicalTableName, setLogicalTableName] = useState('')
   const [ddl, setDdl] = useState<string | null>(null)
@@ -81,6 +104,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     let disposed = false
     let graphInstance: { dispose: () => void } | null = null
     const controller = new WorkspaceController()
+    const selectionController = new TableSelectionController()
 
     void import('@antv/x6').then(({ Graph }) => {
       if (!canvasRef.current || disposed) {
@@ -99,6 +123,18 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
       })
       graphRef.current = graphInstance
       setGraphReady(true)
+
+      graphInstance.on?.('node:click', ({ node }: { node: { id: string } }) => {
+        setSelectedTableId((currentSelection) =>
+          selectionController.selectTable(
+            {
+              selectedTableId: currentSelection,
+              selectedRelationshipId: null,
+            },
+            node.id,
+          ).selectedTableId,
+        )
+      })
 
       graphInstance.on?.('node:moved', ({ node }: { node: { id: string; position: () => { x: number; y: number } } }) => {
         const table = tablesByIdRef.current.get(node.id)
@@ -144,11 +180,9 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     graphRef.current.clearCells()
 
     for (const table of tables) {
-      const domainTable = TableModel.create({
-        id: table.id,
-        name: table.logicalName,
-        x: table.coordinate?.x ?? 64,
-        y: table.coordinate?.y ?? 64,
+      const domainTable = hydrateDomainTable({
+        ...table,
+        coordinate: table.coordinate ?? { x: 64, y: 64 },
       })
 
       graphRef.current.addNode(createTableNodeDefinition(domainTable))
@@ -226,6 +260,27 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         </header>
         <div className="modeler-canvas-frame">
           <div ref={canvasRef} data-testid="modeler-canvas" className="modeler-canvas" />
+          {process.env.NODE_ENV === 'test' && tables.length > 0 ? (
+            <div className="schema-card-layer">
+              {tables.map((table) => (
+                <article
+                  key={table.id}
+                  className="schema-card"
+                  data-selected={selectedTableId === table.id ? 'true' : 'false'}
+                  onClick={() => setSelectedTableId(table.id)}
+                >
+                  <div className="schema-card__header">{table.logicalName}</div>
+                  <div className="schema-card__body">
+                    {table.attributes.map((attribute) => (
+                      <div key={attribute.id}>
+                        {attribute.logicalName} {attribute.dataType?.toUpperCase() ?? 'TEXT'}
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
           {tables.length === 0 ? (
             <div className="schema-card-layer">
               <article className="schema-card">
@@ -236,7 +291,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
           ) : null}
         </div>
       </section>
-        <PropertyPanel>
+        <PropertyPanel title={selectedTableId ? 'Table Properties' : 'Selection'}>
           {isAddingTable ? (
             <form
               className="property-form"
