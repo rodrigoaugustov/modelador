@@ -60,6 +60,6 @@ test('user creates a project, edits a model, saves, reopens, and generates ddl',
 
   await page.getByRole('button', { name: /generate ddl/i }).click()
 
-  await expect(page.getByText(/create table users/i)).toBeVisible()
-  await expect(page.getByText(/foreign key \(user_id\) references users \(id\)/i)).toBeVisible()
+  await expect(page.getByText(/create table public\.users/i)).toBeVisible()
+  await expect(page.getByText(/foreign key \(user_id\) references public\.users \(id\)/i)).toBeVisible()
 })

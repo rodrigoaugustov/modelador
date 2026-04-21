@@ -35,8 +35,8 @@ type ModelerWorkspaceProps = {
 
 function getDefaultTableCoordinate(index: number) {
   return {
-    x: 72 + (index % 3) * 320,
-    y: 72 + Math.floor(index / 3) * 220,
+    x: 72 + (index % 2) * 320,
+    y: 72 + Math.floor(index / 2) * 220,
   }
 }
 
@@ -646,7 +646,11 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
               Add table
             </button>
             <button
-              className="modeler-toolbar__button modeler-toolbar__button--ghost"
+              className={`modeler-toolbar__button ${
+                viewMode === ViewMode.Physical
+                  ? 'modeler-toolbar__button--toggle-active'
+                  : 'modeler-toolbar__button--ghost'
+              }`}
               type="button"
               onClick={() => void handleToggleViewMode()}
             >

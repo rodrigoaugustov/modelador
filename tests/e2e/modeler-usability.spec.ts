@@ -35,12 +35,19 @@ async function createRelationship(
     secondaryAttribute: string
   },
 ) {
+  const configureRelationshipButton = page.getByRole('button', { name: /configure relationship/i })
+
+  if (!(await configureRelationshipButton.isVisible())) {
+    await page.getByTestId('modeler-canvas').getByText(new RegExp(input.primaryTable, 'i')).click({ force: true })
+  }
+
   await page.getByRole('button', { name: /configure relationship/i }).click()
   await page.getByLabel('Primary table').selectOption({ label: input.primaryTable })
   await page.getByLabel('Secondary table').selectOption({ label: input.secondaryTable })
   await page.getByLabel('Primary attribute').selectOption({ label: input.primaryAttribute })
   await page.getByLabel('Secondary attribute').selectOption({ label: input.secondaryAttribute })
   await page.getByRole('button', { name: /create relationship/i }).click()
+  await expect(page.locator('[aria-label="Configure relationship dialog"]')).toHaveCount(0)
 }
 
 test('user completes the live usability flow across tables, attributes, relationships, drag, and deletion', async ({
@@ -80,6 +87,7 @@ test('user completes the live usability flow across tables, attributes, relation
 
   await expect.poll(async () => page.evaluate(() => document.querySelectorAll('.x6-edge').length)).toBe(2)
 
+  await page.getByTestId('modeler-canvas').getByText(/order_items/i).click({ force: true })
   await page.getByRole('button', { name: /edit attributes/i }).click()
   await page.getByRole('button', { name: /delete attribute/i }).last().click()
   await page.getByRole('button', { name: /apply schema changes/i }).click()
@@ -118,8 +126,8 @@ test('user completes the live usability flow across tables, attributes, relation
   await expect.poll(async () => page.evaluate(() => document.querySelectorAll('.x6-edge').length)).toBe(1)
 
   await page.getByRole('button', { name: /generate ddl/i }).click()
-  await expect(page.getByText(/create table users/i)).toBeVisible()
-  await expect(page.getByText(/create table orders/i)).toBeVisible()
-  await expect(page.getByText(/create table order_items/i)).toHaveCount(0)
-  await expect(page.getByText(/foreign key \(user_id\) references users \(id\)/i)).toBeVisible()
+  await expect(page.getByText(/create table public\.users/i)).toBeVisible()
+  await expect(page.getByText(/create table public\.orders/i)).toBeVisible()
+  await expect(page.getByText(/create table public\.order_items/i)).toHaveCount(0)
+  await expect(page.getByText(/foreign key \(user_id\) references public\.users \(id\)/i)).toBeVisible()
 })
