@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { projectService } from '@/server/persistence/project-service'
 import { ProjectPicker } from '@/app/projects/project-picker'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ProjectsPage() {
   const projects = await projectService.listProjects()
 
