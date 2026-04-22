@@ -243,7 +243,7 @@ describe('EditAttributesModal', () => {
     expect(screen.getByRole('columnheader', { name: 'Name' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Type' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'PK' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'NN' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Not Null' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('row', { name: /number text/i }))
 

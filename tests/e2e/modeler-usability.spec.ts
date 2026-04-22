@@ -20,7 +20,7 @@ async function addColumns(page: Page, columns: Array<{ name: string; dataType: s
   for (const column of columns) {
     await page.getByRole('button', { name: /add column/i }).click()
     await page.getByLabel('Column name').last().fill(column.name)
-    await page.getByLabel('Data type').last().fill(column.dataType)
+    await page.getByLabel('Data type').last().selectOption(column.dataType)
   }
 
   await page.getByRole('button', { name: /apply schema changes/i }).click()

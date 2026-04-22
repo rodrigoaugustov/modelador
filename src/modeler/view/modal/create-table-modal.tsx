@@ -55,7 +55,7 @@ export function CreateTableModal({
                 <input aria-label="Column name" value={attribute.logicalName} readOnly />
                 <input aria-label="Data type" value={attribute.dataType?.toUpperCase() ?? 'TEXT'} readOnly />
                 <input aria-label="Primary key" value={attribute.isPrimaryKey ? 'PK' : ''} readOnly />
-                <input aria-label="Not null" value={attribute.isNull ? '' : 'NN'} readOnly />
+                <input aria-label="Not null" value={attribute.isNull ? '' : 'Not Null'} readOnly />
               </div>
             ))
           ) : (

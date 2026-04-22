@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { projectService } from '@/server/persistence/project-service'
+import { ProjectPicker } from '@/app/projects/project-picker'
 
 export default async function ProjectsPage() {
   const projects = await projectService.listProjects()
@@ -12,18 +13,11 @@ export default async function ProjectsPage() {
         <Link href="/projects/new">Create project</Link>
         <Link href="/">Back home</Link>
       </div>
-      <section className="projects-list" aria-label="Saved projects">
-        {projects.length > 0 ? (
-          projects.map((project) => (
-            <Link key={project.id} href={`/projects/${project.id}`} className="projects-list__item">
-              <span className="projects-list__name">{project.name}</span>
-              <span className="projects-list__meta">{project.updated_at ?? 'Saved project'}</span>
-            </Link>
-          ))
-        ) : (
-          <p className="modeler-panel__copy">No projects saved yet.</p>
-        )}
-      </section>
+      {projects.length > 0 ? (
+        <ProjectPicker projects={projects} />
+      ) : (
+        <p className="modeler-panel__copy">No projects saved yet.</p>
+      )}
     </main>
   )
 }

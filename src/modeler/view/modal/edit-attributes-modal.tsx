@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { EditAttributesFormHandler } from '@/modeler/control/handler/form/table/edit-attributes-form-handler'
 import { ReorderAttributesFormHandler } from '@/modeler/control/handler/form/table/reorder-attributes-form-handler'
 import type { EditorAttributeSnapshot, EditorTableSnapshot } from '@/modeler/types/editor-snapshot'
+import { postgresDataTypes } from '@/lib/postgres-data-types'
 
 function normalizeFilterValue(value: string) {
   return value.trim().toLowerCase()
@@ -150,7 +151,7 @@ export function EditAttributesModal({
                 <th scope="col">Name</th>
                 <th scope="col">Type</th>
                 <th scope="col">PK</th>
-                <th scope="col">NN</th>
+                <th scope="col">Not Null</th>
                 <th scope="col">Actions</th>
               </tr>
             </thead>
@@ -185,15 +186,21 @@ export function EditAttributesModal({
                       />
                     </td>
                     <td>
-                      <input
+                      <select
                         aria-label="Data type"
-                        value={attribute.dataType ?? ''}
+                        value={attribute.dataType ?? 'text'}
                         onChange={(event) =>
                           updateAttribute(attribute.id, {
                             dataType: event.target.value,
                           })
                         }
-                      />
+                      >
+                        {postgresDataTypes.map((dataType) => (
+                          <option key={dataType.code} value={dataType.code}>
+                            {dataType.label}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                     <td className="attributes-grid__checkbox-cell">
                       <input

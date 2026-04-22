@@ -39,7 +39,7 @@ describe('createTableNodeDefinition', () => {
     expect(tableData.isSelected).toBe(false)
     expect(tableData.primaryKeyRows).toEqual([
       expect.objectContaining({
-        name: 'id [NN]',
+        name: 'id [Not Null]',
         typeLabel: 'UUID',
       }),
     ])

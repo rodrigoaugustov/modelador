@@ -17,6 +17,9 @@ describe('ModelerWorkspace', () => {
 
     expect(screen.getByTestId('modeler-canvas')).toBeInTheDocument()
     expect(screen.getByText(/sales/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /novo projeto/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /salvar projeto/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /carregar projeto/i })).toBeInTheDocument()
   })
 
   it('renders schema-card style table details for attributes in test mode', () => {
@@ -58,7 +61,7 @@ describe('ModelerWorkspace', () => {
     )
 
     expect(screen.getByText(/users/i)).toBeInTheDocument()
-    expect(screen.getByText(/id \[nn\]/i)).toBeInTheDocument()
+    expect(screen.getByText(/id \[not null\]/i)).toBeInTheDocument()
   })
 
   it('shows the table details action after selecting a schema card in test mode', async () => {
@@ -319,7 +322,7 @@ describe('ModelerWorkspace', () => {
     const rowNames = Array.from(container.querySelectorAll('.schema-card__row-name')).map((node) => node.textContent?.trim())
     const rowTypes = Array.from(container.querySelectorAll('.schema-card__row-type')).map((node) => node.textContent?.trim())
 
-    expect(rowNames).toEqual(['id [NN]', 'number'])
+    expect(rowNames).toEqual(['id [Not Null]', 'number'])
     expect(rowTypes).toEqual(['UUID', 'TEXT'])
   })
 

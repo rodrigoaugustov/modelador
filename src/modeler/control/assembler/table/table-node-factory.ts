@@ -49,7 +49,9 @@ function resolveName(
 }
 
 function formatAttributeTokens(attribute: Pick<TableAttributeText, 'isForeignKey' | 'isNull'>) {
-  return [attribute.isForeignKey ? '[FK]' : null, attribute.isNull === false ? '[NN]' : null].filter(Boolean).join(' ')
+  return [attribute.isForeignKey ? '[FK]' : null, attribute.isNull === false ? '[Not Null]' : null]
+    .filter(Boolean)
+    .join(' ')
 }
 
 function formatAttributeRow(attribute: TableAttributeText, viewMode: ViewMode): TableRowDefinition {

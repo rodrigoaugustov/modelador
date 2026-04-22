@@ -42,6 +42,7 @@ a {
 }
 
 .home-page__actions a {
+  border: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -53,6 +54,66 @@ a {
   font-size: 0.875rem;
   font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
+}
+
+.home-page__action-button {
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  background: #dbe1ff;
+  color: #0048bf;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.home-page__action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.project-picker {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 30px rgba(42, 52, 57, 0.06);
+}
+
+.project-picker__label {
+  color: #566166;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.project-picker__search,
+.project-picker__select {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.project-picker__search input,
+.project-picker__select select {
+  border: 1px solid rgba(0, 83, 219, 0.15);
+  border-radius: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  background: #ffffff;
+  color: #2a3439;
+  font: inherit;
+}
+
+.project-picker__search input:focus,
+.project-picker__select select:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(0, 83, 219, 0.14);
 }
 
 .projects-list {
@@ -84,16 +145,21 @@ a {
 .modeler-layout {
   display: grid;
   grid-template-columns: 18rem 1fr 20rem;
-  min-height: 100vh;
+  height: 100dvh;
+  min-height: 100dvh;
   background: #f7f9fb;
+  overflow: hidden;
 }
 
 .modeler-panel {
+  box-sizing: border-box;
   display: grid;
   align-content: start;
   gap: 1rem;
   padding: 1.5rem;
   background: #f0f4f7;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .modeler-panel--right {
@@ -223,12 +289,15 @@ a {
 }
 
 .modeler-canvas-shell {
+  box-sizing: border-box;
   display: grid;
-  grid-template-rows: auto 1fr;
-  min-height: 100vh;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
   padding: 1.25rem;
   gap: 1rem;
   background: #f7f9fb;
+  overflow: hidden;
 }
 
 .modeler-canvas-toolbar {
@@ -261,7 +330,8 @@ a {
 
 .modeler-canvas-frame {
   position: relative;
-  min-height: 70vh;
+  height: 100%;
+  min-height: 0;
   border-radius: 1.75rem;
   background:
     radial-gradient(circle at top left, rgba(0, 83, 219, 0.08), transparent 24rem),
@@ -271,7 +341,8 @@ a {
 
 .modeler-canvas {
   width: 100%;
-  min-height: 70vh;
+  height: 100%;
+  min-height: 0;
 }
 
 .relationship-handle-layer {
@@ -449,6 +520,7 @@ a {
 }
 
 .modeler-sidebar__tool {
+  text-decoration: none;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -460,6 +532,11 @@ a {
   color: #566166;
   font: inherit;
   cursor: pointer;
+}
+
+.modeler-sidebar__tool:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .modeler-sidebar__tool--active {
@@ -770,7 +847,8 @@ a {
 }
 
 .attributes-grid tbody input[type='text'],
-.attributes-grid tbody input:not([type]) {
+.attributes-grid tbody input:not([type]),
+.attributes-grid tbody select {
   width: 100%;
   border: none;
   padding: 0;
@@ -780,7 +858,8 @@ a {
 }
 
 .attributes-grid tbody input[type='text']:focus,
-.attributes-grid tbody input:not([type]):focus {
+.attributes-grid tbody input:not([type]):focus,
+.attributes-grid tbody select:focus {
   outline: none;
 }
 
@@ -934,5 +1013,10 @@ a {
 
   .attributes-modal__detail-form {
     grid-template-columns: 1fr;
+  }
+
+  .modeler-canvas-shell {
+    padding: 0.75rem;
+    gap: 0.75rem;
   }
 }

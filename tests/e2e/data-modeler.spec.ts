@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 async function addColumn(page: Page, column: { name: string; dataType: string }) {
   await page.getByRole('button', { name: /add column/i }).click()
   await page.getByLabel('Column name').last().fill(column.name)
-  await page.getByLabel('Data type').last().fill(column.dataType)
+  await page.getByLabel('Data type').last().selectOption(column.dataType)
 }
 
 test('user creates a project, edits a model, saves, reopens, and generates ddl', async ({ page }) => {
@@ -98,7 +98,9 @@ test('user can start a relationship by dragging from one table to another', asyn
 
   await page.goto('/')
   await page.getByRole('link', { name: /load project/i }).click()
-  await page.getByRole('link', { name: /relationship drag model/i }).first().click()
+  await page.getByLabel('Buscar projeto').fill('Relationship Drag Model')
+  await page.getByLabel('Projetos salvos').selectOption({ index: 0 })
+  await page.getByRole('button', { name: /abrir projeto/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/orders/i)).toBeVisible()
 
   await page.locator('.x6-node').first().click()

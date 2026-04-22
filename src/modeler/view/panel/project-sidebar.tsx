@@ -1,4 +1,16 @@
-export function ProjectSidebar({ project }: { project: { name: string } }) {
+import Link from 'next/link'
+
+export function ProjectSidebar({
+  project,
+  onSaveProject,
+  isSavingProject,
+  saveFeedback,
+}: {
+  project: { name: string }
+  onSaveProject: () => void
+  isSavingProject: boolean
+  saveFeedback: string | null
+}) {
   return (
     <aside className="modeler-panel">
       <div className="modeler-sidebar__brand">
@@ -13,16 +25,17 @@ export function ProjectSidebar({ project }: { project: { name: string } }) {
         </p>
       </div>
       <nav className="modeler-sidebar__nav" aria-label="Workspace tools">
-        <button className="modeler-sidebar__tool modeler-sidebar__tool--active" type="button">
-          <span className="modeler-sidebar__tool-label">Table</span>
+        <Link href="/projects/new" className="modeler-sidebar__tool modeler-sidebar__tool--active">
+          <span className="modeler-sidebar__tool-label">Novo Projeto</span>
+        </Link>
+        <button className="modeler-sidebar__tool" type="button" onClick={onSaveProject} disabled={isSavingProject}>
+          <span className="modeler-sidebar__tool-label">{isSavingProject ? 'Salvando...' : 'Salvar Projeto'}</span>
         </button>
-        <button className="modeler-sidebar__tool" type="button">
-          <span className="modeler-sidebar__tool-label">Relation</span>
-        </button>
-        <button className="modeler-sidebar__tool" type="button">
-          <span className="modeler-sidebar__tool-label">History</span>
-        </button>
+        <Link href="/projects" className="modeler-sidebar__tool">
+          <span className="modeler-sidebar__tool-label">Carregar Projeto</span>
+        </Link>
       </nav>
+      {saveFeedback ? <p className="modeler-panel__copy">{saveFeedback}</p> : null}
     </aside>
   )
 }

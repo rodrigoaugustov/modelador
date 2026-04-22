@@ -17,7 +17,7 @@ async function createTable(page: Page, tableName: string) {
 async function addColumn(page: Page, column: { name: string; dataType: string; isPrimaryKey?: boolean }) {
   await page.getByRole('button', { name: /add column/i }).click()
   await page.getByLabel('Column name').last().fill(column.name)
-  await page.getByLabel('Data type').last().fill(column.dataType)
+  await page.getByLabel('Data type').last().selectOption(column.dataType)
 
   if (column.isPrimaryKey) {
     await page.getByLabel('Primary key').last().check()

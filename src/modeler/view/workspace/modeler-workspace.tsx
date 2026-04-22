@@ -123,7 +123,9 @@ type LiveCoordinateState = Record<string, { x: number; y: number }>
 function formatSnapshotAttributeTokens(
   attribute: Pick<EditorTableSnapshot['attributes'][number], 'isForeignKey' | 'isNull'>,
 ) {
-  return [attribute.isForeignKey ? '[FK]' : null, attribute.isNull === false ? '[NN]' : null].filter(Boolean).join(' ')
+  return [attribute.isForeignKey ? '[FK]' : null, attribute.isNull === false ? '[Not Null]' : null]
+    .filter(Boolean)
+    .join(' ')
 }
 
 function getOrderedSnapshotAttributes(table: EditorTableSnapshot) {
@@ -323,6 +325,8 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   const [liveCoordinates, setLiveCoordinates] = useState<LiveCoordinateState>({})
   const [ddl, setDdl] = useState<string | null>(null)
   const [ddlError, setDdlError] = useState<string | null>(null)
+  const [isSavingProject, setIsSavingProject] = useState(false)
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null)
   const selectedTable = tables.find((table) => table.id === selectedTableId) ?? null
   const selectedRelationship = relationships.find((relationship) => relationship.id === selectedRelationshipId) ?? null
 
@@ -934,10 +938,29 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     setViewMode(nextViewMode)
   }
 
+  async function handleSaveProject() {
+    setIsSavingProject(true)
+    setSaveFeedback(null)
+
+    try {
+      await persistSnapshot(snapshot)
+      setSaveFeedback(`Projeto salvo em ${new Date().toLocaleTimeString()}.`)
+    } catch {
+      setSaveFeedback('Nao foi possivel salvar o projeto agora.')
+    } finally {
+      setIsSavingProject(false)
+    }
+  }
+
   return (
     <>
       <div className="modeler-layout">
-        <ProjectSidebar project={initialProject.project} />
+        <ProjectSidebar
+          project={initialProject.project}
+          onSaveProject={() => void handleSaveProject()}
+          isSavingProject={isSavingProject}
+          saveFeedback={saveFeedback}
+        />
         <section className="modeler-canvas-shell" aria-label="Modeler canvas workspace">
           <header className="modeler-canvas-toolbar">
             <div className="modeler-canvas-toolbar__heading">
