@@ -65,7 +65,7 @@ test('user edits table identity, switches to physical mode, edits relationship a
   await relationshipDialog.getByRole('button', { name: /create relationship/i }).click()
   await expect.poll(async () => page.evaluate(() => document.querySelectorAll('.x6-edge').length)).toBe(1)
 
-  await page.locator('.x6-edge path').first().click({ force: true })
+  await page.locator('.x6-edge-label').first().click({ force: true })
   await expect(page.getByRole('button', { name: /edit relationship/i })).toBeVisible()
   await page.getByRole('button', { name: /edit relationship/i }).click()
   await page.getByLabel('On delete').selectOption('restrict')

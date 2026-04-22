@@ -46,6 +46,18 @@ type RelationshipDragState = {
   currentY: number
 }
 
+type CanvasPoint = {
+  x: number
+  y: number
+}
+
+type ViewportTransform = {
+  sx: number
+  sy: number
+  tx: number
+  ty: number
+}
+
 const RELATIONSHIP_HANDLE_OFFSET = 18
 
 function getDefaultTableCoordinate(index: number) {
@@ -161,6 +173,27 @@ function getRelationshipHandlePoint(table: EditorTableSnapshot, direction: 'in' 
         ? table.coordinate.x + width + RELATIONSHIP_HANDLE_OFFSET
         : table.coordinate.x - RELATIONSHIP_HANDLE_OFFSET,
     y: table.coordinate.y + height / 2,
+  }
+}
+
+function projectGraphPointToCanvas(
+  point: CanvasPoint,
+  graph: X6Graph | null,
+  frameRect: DOMRect | null,
+  viewport: ViewportTransform,
+) {
+  if (graph && frameRect && typeof graph.localToClient === 'function') {
+    const projectedPoint = graph.localToClient(point)
+
+    return {
+      x: projectedPoint.x - frameRect.left,
+      y: projectedPoint.y - frameRect.top,
+    }
+  }
+
+  return {
+    x: point.x * viewport.sx + viewport.tx,
+    y: point.y * viewport.sy + viewport.ty,
   }
 }
 
@@ -297,6 +330,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   const skipNextGraphSyncRef = useRef(false)
   const relationshipVerticesFlushRef = useRef<number | null>(null)
   const pendingRelationshipVerticesRef = useRef<Record<string, Array<{ x: number; y: number }>>>({})
+  const isVertexDraggingRef = useRef(false)
   const graphRef = useRef<X6Graph | null>(null)
   const localStore = useMemo(() => createProjectLocalStore(), [])
   const createTableFormHandler = useMemo(() => new CreateTableFormHandler(), [])
@@ -323,6 +357,12 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   const [relationshipDraft, setRelationshipDraft] = useState<EditorRelationshipSnapshot | null>(null)
   const [relationshipDrag, setRelationshipDrag] = useState<RelationshipDragState | null>(null)
   const [liveCoordinates, setLiveCoordinates] = useState<LiveCoordinateState>({})
+  const [viewportTransform, setViewportTransform] = useState<ViewportTransform>({
+    sx: 1,
+    sy: 1,
+    tx: 0,
+    ty: 0,
+  })
   const [ddl, setDdl] = useState<string | null>(null)
   const [ddlError, setDdlError] = useState<string | null>(null)
   const [isSavingProject, setIsSavingProject] = useState(false)
@@ -428,12 +468,62 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
 
     let disposed = false
     let graphInstance: X6Graph | null = null
+    let handleCanvasMouseDown: ((event: MouseEvent) => void) | null = null
+    let handleCanvasMouseUp: (() => void) | null = null
     const controller = new WorkspaceController()
 
     void import('@antv/x6').then(({ Graph, Shape }) => {
       if (!canvasRef.current || disposed) {
         return
       }
+
+      const flushPendingRelationshipVertices = () => {
+        const pendingVertices = pendingRelationshipVerticesRef.current
+        const pendingRelationshipIds = Object.keys(pendingVertices)
+
+        if (pendingRelationshipIds.length === 0) {
+          return
+        }
+
+        pendingRelationshipVerticesRef.current = {}
+
+        setRelationships((currentRelationships) =>
+          currentRelationships.map((relationship) =>
+            pendingVertices[relationship.id]
+              ? {
+                  ...relationship,
+                  vertices: pendingVertices[relationship.id],
+                }
+              : relationship,
+          ),
+        )
+      }
+
+      handleCanvasMouseDown = (event: MouseEvent) => {
+        const target = event.target instanceof Element ? event.target : null
+
+        if (target?.closest('.x6-edge-tool-vertex')) {
+          isVertexDraggingRef.current = true
+        }
+      }
+
+      handleCanvasMouseUp = () => {
+        if (!isVertexDraggingRef.current) {
+          return
+        }
+
+        isVertexDraggingRef.current = false
+
+        if (relationshipVerticesFlushRef.current !== null) {
+          window.clearTimeout(relationshipVerticesFlushRef.current)
+          relationshipVerticesFlushRef.current = null
+        }
+
+        flushPendingRelationshipVertices()
+      }
+
+      canvasFrameRef.current?.addEventListener('mousedown', handleCanvasMouseDown, true)
+      window.addEventListener('mouseup', handleCanvasMouseUp, true)
 
       registerTableNodeShape(Shape.HTML)
 
@@ -472,6 +562,30 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
       } as any)
       graphRef.current = graphInstance
       setGraphReady(true)
+      const graphScale = graphInstance.scale()
+      const graphTranslate = graphInstance.translate()
+      setViewportTransform({
+        sx: graphScale.sx,
+        sy: graphScale.sy,
+        tx: graphTranslate.tx,
+        ty: graphTranslate.ty,
+      })
+
+      graphInstance.on?.('scale', ({ sx, sy }: { sx: number; sy: number }) => {
+        setViewportTransform((currentTransform) => ({
+          ...currentTransform,
+          sx,
+          sy,
+        }))
+      })
+
+      graphInstance.on?.('translate', ({ tx, ty }: { tx: number; ty: number }) => {
+        setViewportTransform((currentTransform) => ({
+          ...currentTransform,
+          tx,
+          ty,
+        }))
+      })
 
       graphInstance.on?.('node:click', ({ node }: { node: { id: string } }) => {
         setSelectedRelationshipId(null)
@@ -481,6 +595,11 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
       graphInstance.on?.('edge:click', ({ edge }: { edge: { id: string } }) => {
         setSelectedTableId(null)
         setSelectedRelationshipId(edge.id)
+      })
+
+      graphInstance.on?.('blank:click', () => {
+        setSelectedRelationshipId(null)
+        setSelectedTableId(null)
       })
 
       graphInstance.on?.(
@@ -530,28 +649,30 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
       ) => {
         pendingRelationshipVerticesRef.current[edge.id] = edge.getVertices() ?? []
 
+        if (isVertexDraggingRef.current) {
+          return
+        }
+
         if (relationshipVerticesFlushRef.current !== null) {
           window.clearTimeout(relationshipVerticesFlushRef.current)
         }
 
         relationshipVerticesFlushRef.current = window.setTimeout(() => {
-          const pendingVertices = pendingRelationshipVerticesRef.current
-          pendingRelationshipVerticesRef.current = {}
           relationshipVerticesFlushRef.current = null
-
-          setRelationships((currentRelationships) =>
-            currentRelationships.map((relationship) =>
-              pendingVertices[relationship.id]
-                ? {
-                    ...relationship,
-                    vertices: pendingVertices[relationship.id],
-                  }
-                : relationship,
-            ),
-          )
-        }, 120)
+          flushPendingRelationshipVertices()
+        }, 220)
       },
       )
+
+      graphInstance.on?.('edge:mouseup', () => {
+        if (relationshipVerticesFlushRef.current !== null) {
+          window.clearTimeout(relationshipVerticesFlushRef.current)
+          relationshipVerticesFlushRef.current = null
+        }
+
+        flushPendingRelationshipVertices()
+        isVertexDraggingRef.current = false
+      })
 
       graphInstance.on?.(
         'edge:connected',
@@ -668,6 +789,19 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
       disposed = true
       graphRef.current = null
       setGraphReady(false)
+      setViewportTransform({
+        sx: 1,
+        sy: 1,
+        tx: 0,
+        ty: 0,
+      })
+      isVertexDraggingRef.current = false
+      if (handleCanvasMouseDown) {
+        canvasFrameRef.current?.removeEventListener('mousedown', handleCanvasMouseDown, true)
+      }
+      if (handleCanvasMouseUp) {
+        window.removeEventListener('mouseup', handleCanvasMouseUp, true)
+      }
       graphInstance?.dispose()
     }
   }, [])
@@ -952,6 +1086,9 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     }
   }
 
+  const graphForHandles = graphRef.current
+  const frameRectForHandles = canvasFrameRef.current?.getBoundingClientRect() ?? null
+
   return (
     <>
       <div className="modeler-layout">
@@ -1038,8 +1175,18 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
                       coordinate: liveCoordinate,
                     }
                   : table
-                const sourcePoint = getRelationshipHandlePoint(tableWithCoordinate, 'out')
-                const targetPoint = getRelationshipHandlePoint(tableWithCoordinate, 'in')
+                const sourcePoint = projectGraphPointToCanvas(
+                  getRelationshipHandlePoint(tableWithCoordinate, 'out'),
+                  graphForHandles,
+                  frameRectForHandles,
+                  viewportTransform,
+                )
+                const targetPoint = projectGraphPointToCanvas(
+                  getRelationshipHandlePoint(tableWithCoordinate, 'in'),
+                  graphForHandles,
+                  frameRectForHandles,
+                  viewportTransform,
+                )
                 const label = resolveSnapshotName(table, viewMode)
                 const showSourceHandle =
                   selectedTableId === table.id || relationshipDrag?.sourceTableId === table.id

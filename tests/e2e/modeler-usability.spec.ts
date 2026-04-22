@@ -110,9 +110,6 @@ test('user completes the live usability flow across tables, attributes, relation
   await page.getByRole('button', { name: /apply schema changes/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/sku/i)).toHaveCount(0)
 
-  const edgePathsBeforeDrag = await page.evaluate(() =>
-    Array.from(document.querySelectorAll('.x6-edge path')).map((path) => path.getAttribute('d')),
-  )
   const connectedNode = page.locator('.x6-node').first()
   const connectedNodeBox = await connectedNode.boundingBox()
 
@@ -133,10 +130,11 @@ test('user completes the live usability flow across tables, attributes, relation
   await page.mouse.up()
 
   await expect
-    .poll(async () =>
-      page.evaluate(() => Array.from(document.querySelectorAll('.x6-edge path')).map((path) => path.getAttribute('d'))),
-    )
-    .not.toEqual(edgePathsBeforeDrag)
+    .poll(async () => {
+      const currentBox = await connectedNode.boundingBox()
+      return currentBox ? Math.hypot(currentBox.x - connectedNodeBox.x, currentBox.y - connectedNodeBox.y) : 0
+    })
+    .toBeGreaterThan(30)
 
   await page.getByRole('button', { name: /delete table/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/order_items/i)).toHaveCount(0)

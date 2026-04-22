@@ -19,15 +19,10 @@ export class RelationshipRoutingController {
       }
     }
 
-    if (vertices.length > 0) {
-      return {
-        router: { name: 'orth' as const },
-        connector: { name: 'rounded' as const },
-      }
-    }
-
     return {
-      router: { name: 'manhattan' as const, args: { padding: 24 } },
+      // `manhattan` can fail intermittently for dense ER layouts.
+      // Keep orthogonal routes stable by using `orth` consistently.
+      router: { name: 'orth' as const },
       connector: { name: 'rounded' as const },
     }
   }

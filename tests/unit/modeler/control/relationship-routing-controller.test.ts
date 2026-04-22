@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { RelationshipRoutingController } from '@/modeler/control/handler/relationship/relationship-routing-controller'
 
 describe('RelationshipRoutingController', () => {
-  it('maps orthogonal style to an obstacle-aware manhattan route', () => {
+  it('maps orthogonal style to a stable orth route', () => {
     const controller = new RelationshipRoutingController()
 
     expect(controller.resolveEdgeGeometry('orthogonal')).toEqual({
-      router: { name: 'manhattan', args: { padding: 24 } },
+      router: { name: 'orth' },
       connector: { name: 'rounded' },
     })
   })
 
-  it('falls back to the orth router when orthogonal edges have manual vertices', () => {
+  it('keeps orth routing when orthogonal edges have manual vertices', () => {
     const controller = new RelationshipRoutingController()
 
     expect(controller.resolveEdgeGeometry('orthogonal', [{ x: 120, y: 80 }])).toEqual({

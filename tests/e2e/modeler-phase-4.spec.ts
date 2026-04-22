@@ -172,6 +172,11 @@ test('user adds and removes manual vertices with double click without breaking t
 
   await expect.poll(async () => page.locator('.x6-edge-tool-vertex').count()).toBe(1)
 
+  await page.locator('.x6-node').first().click()
+  await expect(page.getByRole('button', { name: /edit table details/i })).toBeVisible()
+  await page.mouse.click(clickX, clickY)
+  await expect.poll(async () => page.locator('.x6-edge-tool-vertex').count()).toBe(1)
+
   const vertexHandle = page.locator('.x6-edge-tool-vertex').first()
   await expect(vertexHandle).toBeVisible()
   const vertexHandleBox = await vertexHandle.boundingBox()
