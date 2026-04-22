@@ -58,7 +58,7 @@ describe('ModelerWorkspace', () => {
     )
 
     expect(screen.getByText(/users/i)).toBeInTheDocument()
-    expect(screen.getByText(/id/i)).toBeInTheDocument()
+    expect(screen.getByText(/id \[nn\]/i)).toBeInTheDocument()
   })
 
   it('shows the table details action after selecting a schema card in test mode', async () => {
@@ -316,9 +316,71 @@ describe('ModelerWorkspace', () => {
       />,
     )
 
-    const rows = Array.from(container.querySelectorAll('.schema-card__body > div')).map((node) => node.textContent?.trim())
+    const rowNames = Array.from(container.querySelectorAll('.schema-card__row-name')).map((node) => node.textContent?.trim())
+    const rowTypes = Array.from(container.querySelectorAll('.schema-card__row-type')).map((node) => node.textContent?.trim())
 
-    expect(rows).toEqual(['id UUID', 'number TEXT'])
+    expect(rowNames).toEqual(['id [NN]', 'number'])
+    expect(rowTypes).toEqual(['UUID', 'TEXT'])
+  })
+
+  it('renders separate primary key and attribute sections in schema cards during test mode', () => {
+    const { container } = render(
+      <ModelerWorkspace
+        projectId="proj_1"
+        initialProject={{
+          project: { id: 'proj_1', name: 'Sales', description: '' },
+          model: {
+            tables: [
+              {
+                id: 'table_orders',
+                logicalName: 'orders',
+                physicalName: 'tb_orders',
+                schema: 'public',
+                coordinate: { x: 72, y: 72 },
+                attributes: [
+                  {
+                    id: 'attr_orders_id',
+                    logicalName: 'id',
+                    physicalName: 'id',
+                    dataType: 'uuid',
+                    size: null,
+                    isNull: false,
+                    isPrimaryKey: true,
+                    isForeignKey: false,
+                    displayOrder: 0,
+                    definition: null,
+                    example: null,
+                    domain: null,
+                  },
+                  {
+                    id: 'attr_orders_number',
+                    logicalName: 'number',
+                    physicalName: 'number',
+                    dataType: 'text',
+                    size: null,
+                    isNull: true,
+                    isPrimaryKey: false,
+                    isForeignKey: false,
+                    displayOrder: 1,
+                    definition: null,
+                    example: null,
+                    domain: null,
+                  },
+                ],
+              },
+            ],
+            relationships: [],
+          },
+          diagram: { viewport: { x: 0, y: 0, zoom: 1 } },
+          metadata: { viewMode: 'logical', postgresVersion: 'default' },
+        }}
+      />,
+    )
+
+    expect(container.querySelector('.schema-card__section--keys')).not.toBeNull()
+    expect(container.querySelector('.schema-card__section--columns')).not.toBeNull()
+    expect(screen.getByText('Primary keys')).toBeInTheDocument()
+    expect(screen.getByText('Attributes')).toBeInTheDocument()
   })
 
   it('opens a prefilled relationship modal when dragging from one table handle to another', () => {

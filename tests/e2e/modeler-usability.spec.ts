@@ -57,18 +57,34 @@ test('user completes the live usability flow across tables, attributes, relation
   await createProject(page, 'Usability Validation Model')
 
   await createTable(page, 'users')
-  await addColumns(page, [{ name: 'email', dataType: 'text' }])
+  await addColumns(page, [
+    { name: 'id', dataType: 'uuid' },
+    { name: 'email', dataType: 'text' },
+  ])
+  await page.getByRole('button', { name: /edit attributes/i }).click()
+  await page.getByLabel('Primary key').first().check()
+  await page.getByRole('button', { name: /apply schema changes/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/email/i)).toBeVisible()
 
   await createTable(page, 'orders')
-  await addColumns(page, [{ name: 'user_id', dataType: 'uuid' }])
+  await addColumns(page, [
+    { name: 'id', dataType: 'uuid' },
+    { name: 'user_id', dataType: 'uuid' },
+  ])
+  await page.getByRole('button', { name: /edit attributes/i }).click()
+  await page.getByLabel('Primary key').first().check()
+  await page.getByRole('button', { name: /apply schema changes/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/user_id/i)).toBeVisible()
 
   await createTable(page, 'order_items')
   await addColumns(page, [
+    { name: 'id', dataType: 'uuid' },
     { name: 'order_id', dataType: 'uuid' },
     { name: 'sku', dataType: 'text' },
   ])
+  await page.getByRole('button', { name: /edit attributes/i }).click()
+  await page.getByLabel('Primary key').first().check()
+  await page.getByRole('button', { name: /apply schema changes/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/order_id/i)).toBeVisible()
   await expect(page.getByTestId('modeler-canvas').getByText(/sku/i)).toBeVisible()
 

@@ -49,14 +49,20 @@ export function CreateTableModal({
 
         <div className="property-card">
           <p className="modeler-panel__eyebrow">Attributes & Columns</p>
-          {draft.attributes.map((attribute) => (
-            <div key={attribute.id} className="table-modal-row">
-              <input aria-label="Column name" value={attribute.logicalName} readOnly />
-              <input aria-label="Data type" value={attribute.dataType?.toUpperCase() ?? 'TEXT'} readOnly />
-              <input aria-label="Primary key" value={attribute.isPrimaryKey ? 'PK' : ''} readOnly />
-              <input aria-label="Not null" value={attribute.isNull ? '' : 'NN'} readOnly />
-            </div>
-          ))}
+          {draft.attributes.length > 0 ? (
+            draft.attributes.map((attribute) => (
+              <div key={attribute.id} className="table-modal-row">
+                <input aria-label="Column name" value={attribute.logicalName} readOnly />
+                <input aria-label="Data type" value={attribute.dataType?.toUpperCase() ?? 'TEXT'} readOnly />
+                <input aria-label="Primary key" value={attribute.isPrimaryKey ? 'PK' : ''} readOnly />
+                <input aria-label="Not null" value={attribute.isNull ? '' : 'NN'} readOnly />
+              </div>
+            ))
+          ) : (
+            <p className="modeler-panel__copy">
+              This table starts without columns. Add attributes after the table is created.
+            </p>
+          )}
         </div>
 
         <div className="modeler-toolbar">

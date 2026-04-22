@@ -5,7 +5,10 @@ export default function HomePage() {
     <main className="home-page">
       <h1>Data Modeler</h1>
       <p>Design tables, relationships, and PostgreSQL DDL in the browser.</p>
-      <Link href="/projects/new">Create project</Link>
+      <div className="home-page__actions">
+        <Link href="/projects/new">Create project</Link>
+        <Link href="/projects">Load project</Link>
+      </div>
     </main>
   )
 }

@@ -14,6 +14,16 @@ async function createTable(page: Page, tableName: string) {
   await expect(page.getByTestId('modeler-canvas').getByText(new RegExp(tableName, 'i'))).toBeVisible()
 }
 
+async function addColumn(page: Page, column: { name: string; dataType: string; isPrimaryKey?: boolean }) {
+  await page.getByRole('button', { name: /add column/i }).click()
+  await page.getByLabel('Column name').last().fill(column.name)
+  await page.getByLabel('Data type').last().fill(column.dataType)
+
+  if (column.isPrimaryKey) {
+    await page.getByLabel('Primary key').last().check()
+  }
+}
+
 test('user edits table identity, switches to physical mode, edits relationship actions, and exports spec-faithful ddl', async ({
   page,
 }) => {
@@ -26,10 +36,9 @@ test('user edits table identity, switches to physical mode, edits relationship a
   await page.getByRole('button', { name: /apply table details/i }).click()
 
   await page.getByRole('button', { name: /edit attributes/i }).click()
-  await page.getByRole('button', { name: /add column/i }).click()
-  await page.getByLabel('Column name').last().fill('email')
+  await addColumn(page, { name: 'id', dataType: 'uuid', isPrimaryKey: true })
+  await addColumn(page, { name: 'email', dataType: 'varchar' })
   await page.getByLabel('Physical name').last().fill('email_address')
-  await page.getByLabel('Data type').last().fill('varchar')
   await page.getByLabel('Size').last().fill('255')
   await page.getByLabel('Definition').last().fill('Main user contact address')
   await page.getByLabel('Not null').last().check()
@@ -42,10 +51,9 @@ test('user edits table identity, switches to physical mode, edits relationship a
   await page.getByRole('button', { name: /apply table details/i }).click()
 
   await page.getByRole('button', { name: /edit attributes/i }).click()
-  await page.getByRole('button', { name: /add column/i }).click()
-  await page.getByLabel('Column name').last().fill('user_id')
+  await addColumn(page, { name: 'id', dataType: 'uuid', isPrimaryKey: true })
+  await addColumn(page, { name: 'user_id', dataType: 'uuid' })
   await page.getByLabel('Physical name').last().fill('user_id')
-  await page.getByLabel('Data type').last().fill('uuid')
   await page.getByRole('button', { name: /apply schema changes/i }).click()
 
   await page.getByRole('button', { name: /configure relationship/i }).click()
@@ -64,7 +72,7 @@ test('user edits table identity, switches to physical mode, edits relationship a
   await page.getByLabel('On update').selectOption('no action')
   await page.getByRole('button', { name: /save relationship/i }).click()
 
-  await page.getByRole('button', { name: /physical mode/i }).click()
+  await page.getByRole('switch', { name: /physical mode|logical mode/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/tb_users/i)).toBeVisible()
   await expect(page.getByTestId('modeler-canvas').getByText(/tb_orders/i)).toBeVisible()
 

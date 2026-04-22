@@ -11,6 +11,15 @@ describe('RelationshipRoutingController', () => {
     })
   })
 
+  it('falls back to the orth router when orthogonal edges have manual vertices', () => {
+    const controller = new RelationshipRoutingController()
+
+    expect(controller.resolveEdgeGeometry('orthogonal', [{ x: 120, y: 80 }])).toEqual({
+      router: { name: 'orth' },
+      connector: { name: 'rounded' },
+    })
+  })
+
   it('maps straight and curved styles to the expected connectors', () => {
     const controller = new RelationshipRoutingController()
 

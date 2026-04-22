@@ -1,4 +1,10 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+
+async function addColumn(page: Page, column: { name: string; dataType: string }) {
+  await page.getByRole('button', { name: /add column/i }).click()
+  await page.getByLabel('Column name').last().fill(column.name)
+  await page.getByLabel('Data type').last().fill(column.dataType)
+}
 
 test('user creates a project, edits a model, saves, reopens, and generates ddl', async ({ page }) => {
   await page.goto('/')
@@ -8,14 +14,14 @@ test('user creates a project, edits a model, saves, reopens, and generates ddl',
 
   await page.getByRole('button', { name: /add table/i }).click()
   await expect(page.getByRole('heading', { name: /create new table/i })).toBeVisible()
-  await expect(page.getByLabel('Column name').first()).toHaveValue('id')
   await page.getByLabel('Table Name').fill('users')
   await page.getByRole('button', { name: /create table/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/users/i)).toBeVisible()
 
   await page.getByRole('button', { name: /edit attributes/i }).click()
-  await page.getByRole('button', { name: /add column/i }).click()
-  await page.getByLabel('Column name').last().fill('email')
+  await addColumn(page, { name: 'id', dataType: 'uuid' })
+  await page.getByLabel('Primary key').last().check()
+  await addColumn(page, { name: 'email', dataType: 'text' })
   await page.getByRole('button', { name: /apply schema changes/i }).click()
   await expect(page.getByRole('heading', { name: /edit attributes:/i })).toHaveCount(0)
   await page.reload()
@@ -27,9 +33,9 @@ test('user creates a project, edits a model, saves, reopens, and generates ddl',
   await expect(page.getByTestId('modeler-canvas').getByText(/orders/i)).toBeVisible()
 
   await page.getByRole('button', { name: /edit attributes/i }).click()
-  await page.getByRole('button', { name: /add column/i }).click()
-  await page.getByLabel('Column name').last().fill('user_id')
-  await page.getByLabel('Data type').last().fill('uuid')
+  await addColumn(page, { name: 'id', dataType: 'uuid' })
+  await page.getByLabel('Primary key').last().check()
+  await addColumn(page, { name: 'user_id', dataType: 'uuid' })
   await page.getByRole('button', { name: /apply schema changes/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/user_id/i)).toBeVisible()
 
@@ -74,6 +80,10 @@ test('user can start a relationship by dragging from one table to another', asyn
   await page.getByLabel('Table Name').fill('users')
   await page.getByRole('button', { name: /create table/i }).click()
   await expect(page.getByTestId('modeler-canvas').getByText(/users/i)).toBeVisible()
+  await page.getByRole('button', { name: /edit attributes/i }).click()
+  await addColumn(page, { name: 'id', dataType: 'uuid' })
+  await page.getByLabel('Primary key').last().check()
+  await page.getByRole('button', { name: /apply schema changes/i }).click()
 
   await page.getByRole('button', { name: /add table/i }).click()
   await page.getByLabel('Table Name').fill('orders')
@@ -81,10 +91,15 @@ test('user can start a relationship by dragging from one table to another', asyn
   await expect(page.getByTestId('modeler-canvas').getByText(/orders/i)).toBeVisible()
 
   await page.getByRole('button', { name: /edit attributes/i }).click()
-  await page.getByRole('button', { name: /add column/i }).click()
-  await page.getByLabel('Column name').last().fill('user_id')
-  await page.getByLabel('Data type').last().fill('uuid')
+  await addColumn(page, { name: 'id', dataType: 'uuid' })
+  await page.getByLabel('Primary key').last().check()
+  await addColumn(page, { name: 'user_id', dataType: 'uuid' })
   await page.getByRole('button', { name: /apply schema changes/i }).click()
+
+  await page.goto('/')
+  await page.getByRole('link', { name: /load project/i }).click()
+  await page.getByRole('link', { name: /relationship drag model/i }).first().click()
+  await expect(page.getByTestId('modeler-canvas').getByText(/orders/i)).toBeVisible()
 
   await page.locator('.x6-node').first().click()
 

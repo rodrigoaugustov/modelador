@@ -1,10 +1,13 @@
-import type { Edge } from '@antv/x6'
+import type { EdgeMetadata } from '@antv/x6/lib/model/edge'
 import { RelationshipRoutingController } from '@/modeler/control/handler/relationship/relationship-routing-controller'
-import type { RelationshipModel } from '@/modeler/model/relationship/relationship-model'
+import { RelationshipModel } from '@/modeler/model/relationship/relationship-model'
 
-export function createRelationshipEdgeDefinition(relationship: RelationshipModel): Edge.Metadata {
+export function createRelationshipEdgeDefinition(relationship: RelationshipModel): EdgeMetadata {
   const routingController = new RelationshipRoutingController()
-  const geometry = routingController.resolveEdgeGeometry(relationship.lineStyle)
+  const geometry = routingController.resolveEdgeGeometry(
+    relationship.lineStyle,
+    relationship.vertices,
+  )
   const label = relationship.segmentList[0]?.label ?? RelationshipModel.resolveTypeLabel(relationship.relationshipType)
 
   return {
@@ -14,7 +17,7 @@ export function createRelationshipEdgeDefinition(relationship: RelationshipModel
     router: geometry.router,
     connector: geometry.connector,
     vertices: relationship.vertices,
-    tools: ['vertices'],
+    tools: [{ name: 'vertices', args: { addable: false, removable: true, snapRadius: 0 } }],
     labels: [
       {
         attrs: {

@@ -1,10 +1,14 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { Graph as X6Graph } from '@antv/x6'
 import { createProjectLocalStore } from '@/lib/local/indexeddb-project-store'
 import { createRelationshipEdgeDefinition } from '@/modeler/control/assembler/relationship/relationship-edge-factory'
-import { createTableNodeDefinition } from '@/modeler/control/assembler/table/table-node-factory'
+import {
+  createTableNodeDefinition,
+  getTableNodeMetrics,
+  registerTableNodeShape,
+} from '@/modeler/control/assembler/table/table-node-factory'
 import { ConfigureRelationshipFormHandler } from '@/modeler/control/handler/form/relationship/configure-relationship-form-handler'
 import { CreateTableFormHandler } from '@/modeler/control/handler/form/table/create-table-form-handler'
 import { EditAttributesFormHandler } from '@/modeler/control/handler/form/table/edit-attributes-form-handler'
@@ -108,9 +112,41 @@ function resolveRelationshipTypeLabel(type: EditorRelationshipSnapshot['relation
 }
 
 function getTableCanvasMetrics(table: EditorTableSnapshot) {
+  return getTableNodeMetrics({
+    primaryKeyCount: table.attributes.filter((attribute) => attribute.isPrimaryKey).length,
+    attributeCount: table.attributes.filter((attribute) => !attribute.isPrimaryKey).length,
+  })
+}
+
+type LiveCoordinateState = Record<string, { x: number; y: number }>
+
+function formatSnapshotAttributeTokens(
+  attribute: Pick<EditorTableSnapshot['attributes'][number], 'isForeignKey' | 'isNull'>,
+) {
+  return [attribute.isForeignKey ? '[FK]' : null, attribute.isNull === false ? '[NN]' : null].filter(Boolean).join(' ')
+}
+
+function getOrderedSnapshotAttributes(table: EditorTableSnapshot) {
+  return [...table.attributes].sort((left, right) => left.displayOrder - right.displayOrder)
+}
+
+function getSnapshotTableSections(table: EditorTableSnapshot, viewMode: ViewMode) {
+  const orderedAttributes = getOrderedSnapshotAttributes(table)
+  const toRow = (attribute: EditorTableSnapshot['attributes'][number]) => {
+    const name = resolveAttributeSnapshotName(attribute, viewMode)
+    const tokenSuffix = formatSnapshotAttributeTokens(attribute)
+    const sizeSuffix = attribute.size ? `(${attribute.size})` : ''
+
+    return {
+      id: attribute.id,
+      name: tokenSuffix ? `${name} ${tokenSuffix}` : name,
+      typeLabel: `${attribute.dataType?.toUpperCase() ?? 'TEXT'}${sizeSuffix}`,
+    }
+  }
+
   return {
-    width: 320,
-    height: Math.max(140, 84 + table.attributes.length * 24),
+    primaryKeyRows: orderedAttributes.filter((attribute) => attribute.isPrimaryKey).map(toRow),
+    attributeRows: orderedAttributes.filter((attribute) => !attribute.isPrimaryKey).map(toRow),
   }
 }
 
@@ -254,18 +290,12 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   const canvasFrameRef = useRef<HTMLDivElement | null>(null)
   const tablesByIdRef = useRef<Map<string, TableModel>>(new Map())
   const tablesSnapshotRef = useRef<EditorTableSnapshot[]>(normalizeTables(initialProject.model.tables))
+  const liveCoordinatesRef = useRef<LiveCoordinateState>({})
   const lastPersistedSnapshotRef = useRef<string | null>(null)
   const skipNextGraphSyncRef = useRef(false)
-  const graphRef = useRef<{
-    resetCells: (cells: unknown[]) => void
-    clearCells: () => void
-    addNode: (metadata: unknown) => void
-    addEdge: (metadata: unknown) => void
-    createNode: (metadata: unknown) => unknown
-    createEdge: (metadata: unknown) => unknown
-    dispose: () => void
-    on?: (eventName: string, handler: (event: any) => void) => void
-  } | null>(null)
+  const relationshipVerticesFlushRef = useRef<number | null>(null)
+  const pendingRelationshipVerticesRef = useRef<Record<string, Array<{ x: number; y: number }>>>({})
+  const graphRef = useRef<X6Graph | null>(null)
   const localStore = useMemo(() => createProjectLocalStore(), [])
   const createTableFormHandler = useMemo(() => new CreateTableFormHandler(), [])
   const configureRelationshipFormHandler = useMemo(() => new ConfigureRelationshipFormHandler(), [])
@@ -273,8 +303,10 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   const editTableDetailsFormHandler = useMemo(() => new EditTableDetailsFormHandler(), [])
   const tableCollisionGuard = useMemo(() => new TableCollisionGuard(), [])
   const viewModeController = useMemo(() => new ViewModeController(), [])
-  const [tables, setTables] = useState(() => normalizeTables(initialProject.model.tables))
-  const [relationships, setRelationships] = useState(() => normalizeRelationships(initialProject.model.relationships ?? []))
+  const [tables, setTables] = useState<EditorTableSnapshot[]>(() => normalizeTables(initialProject.model.tables))
+  const [relationships, setRelationships] = useState<EditorRelationshipSnapshot[]>(() =>
+    normalizeRelationships(initialProject.model.relationships ?? []),
+  )
   const [viewMode, setViewMode] = useState<ViewMode>(initialProject.metadata?.viewMode ?? ViewMode.Logical)
   const [graphReady, setGraphReady] = useState(false)
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
@@ -288,12 +320,13 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   const [tableDetailsDraft, setTableDetailsDraft] = useState<EditorTableSnapshot | null>(null)
   const [relationshipDraft, setRelationshipDraft] = useState<EditorRelationshipSnapshot | null>(null)
   const [relationshipDrag, setRelationshipDrag] = useState<RelationshipDragState | null>(null)
+  const [liveCoordinates, setLiveCoordinates] = useState<LiveCoordinateState>({})
   const [ddl, setDdl] = useState<string | null>(null)
   const [ddlError, setDdlError] = useState<string | null>(null)
   const selectedTable = tables.find((table) => table.id === selectedTableId) ?? null
   const selectedRelationship = relationships.find((relationship) => relationship.id === selectedRelationshipId) ?? null
 
-  const snapshot = useMemo(
+  const snapshot = useMemo<EditorProjectSnapshot>(
     () => ({
       ...initialProject,
       model: {
@@ -312,6 +345,10 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
   useEffect(() => {
     tablesSnapshotRef.current = tables
   }, [tables])
+
+  useEffect(() => {
+    liveCoordinatesRef.current = liveCoordinates
+  }, [liveCoordinates])
 
   useEffect(() => {
     const serializedSnapshot = JSON.stringify(snapshot)
@@ -335,6 +372,14 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
 
     return () => window.clearTimeout(timeoutId)
   }, [snapshot])
+
+  useEffect(() => {
+    return () => {
+      if (relationshipVerticesFlushRef.current !== null) {
+        window.clearTimeout(relationshipVerticesFlushRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!relationshipDrag) {
@@ -378,17 +423,22 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     }
 
     let disposed = false
-    let graphInstance: typeof graphRef.current = null
+    let graphInstance: X6Graph | null = null
     const controller = new WorkspaceController()
 
-    void import('@antv/x6').then(({ Graph }) => {
+    void import('@antv/x6').then(({ Graph, Shape }) => {
       if (!canvasRef.current || disposed) {
         return
       }
 
+      registerTableNodeShape(Shape.HTML)
+
       graphInstance = new Graph({
         container: canvasRef.current,
-        grid: true,
+        grid: {
+          size: 1,
+          visible: false,
+        },
         panning: true,
         mousewheel: true,
         selecting: true,
@@ -401,7 +451,8 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
           allowMulti: false,
           highlight: true,
           connector: 'rounded',
-          validateConnection({ sourceCell, targetCell, sourcePort, targetPort }) {
+          validateConnection(args: any) {
+            const { sourceCell, targetCell, sourcePort, targetPort } = args
             return (
               !!sourceCell &&
               !!targetCell &&
@@ -414,7 +465,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         background: {
           color: '#f7f9fb',
         },
-      })
+      } as any)
       graphRef.current = graphInstance
       setGraphReady(true)
 
@@ -429,6 +480,40 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
       })
 
       graphInstance.on?.(
+        'edge:dblclick',
+        ({
+          edge,
+          view,
+          x,
+          y,
+          e,
+        }: {
+          edge: {
+            insertVertex: (
+              vertex: { x: number; y: number },
+              index?: number,
+              options?: { ui: boolean },
+            ) => void
+          }
+          view: {
+            getVertexIndex: (x: number, y: number) => number
+          }
+          x: number
+          y: number
+          e: MouseEvent & { target: EventTarget | null }
+        },
+      ) => {
+        const target = e.target instanceof Element ? e.target : null
+
+        if (target?.closest('.x6-edge-tool-vertex')) {
+          return
+        }
+
+        edge.insertVertex({ x, y }, view.getVertexIndex(x, y), { ui: true })
+      },
+      )
+
+      graphInstance.on?.(
         'edge:change:vertices',
         ({
           edge,
@@ -439,18 +524,28 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
           }
         },
       ) => {
-        const nextVertices = edge.getVertices() ?? []
+        pendingRelationshipVerticesRef.current[edge.id] = edge.getVertices() ?? []
 
-        setRelationships((currentRelationships) =>
-          currentRelationships.map((relationship) =>
-            relationship.id === edge.id
-              ? {
-                  ...relationship,
-                  vertices: nextVertices,
-                }
-              : relationship,
-          ),
-        )
+        if (relationshipVerticesFlushRef.current !== null) {
+          window.clearTimeout(relationshipVerticesFlushRef.current)
+        }
+
+        relationshipVerticesFlushRef.current = window.setTimeout(() => {
+          const pendingVertices = pendingRelationshipVerticesRef.current
+          pendingRelationshipVerticesRef.current = {}
+          relationshipVerticesFlushRef.current = null
+
+          setRelationships((currentRelationships) =>
+            currentRelationships.map((relationship) =>
+              pendingVertices[relationship.id]
+                ? {
+                    ...relationship,
+                    vertices: pendingVertices[relationship.id],
+                  }
+                : relationship,
+            ),
+          )
+        }, 120)
       },
       )
 
@@ -491,6 +586,35 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         },
       )
 
+      graphInstance.on?.('node:moving', ({ node }: { node: { id: string; position: () => { x: number; y: number } } }) => {
+        const currentTableSnapshot = tablesSnapshotRef.current.find((currentTable) => currentTable.id === node.id)
+
+        if (!currentTableSnapshot) {
+          return
+        }
+
+        const requestedPosition = node.position()
+        const movingMetrics = getTableCanvasMetrics(currentTableSnapshot)
+        const resolvedPosition = tableCollisionGuard.resolve({
+          moving: {
+            x: requestedPosition.x,
+            y: requestedPosition.y,
+            ...movingMetrics,
+          },
+          occupied: tablesSnapshotRef.current
+            .filter((currentTable) => currentTable.id !== node.id)
+            .map((currentTable) => ({
+              ...(liveCoordinatesRef.current[currentTable.id] ?? currentTable.coordinate),
+              ...getTableCanvasMetrics(currentTable),
+            })),
+        })
+
+        setLiveCoordinates((currentCoordinates) => ({
+          ...currentCoordinates,
+          [node.id]: resolvedPosition,
+        }))
+      })
+
       graphInstance.on?.('node:moved', ({ node }: { node: { id: string; position: () => { x: number; y: number } } }) => {
         const table = tablesByIdRef.current.get(node.id)
         const currentTableSnapshot = tablesSnapshotRef.current.find((currentTable) => currentTable.id === node.id)
@@ -518,6 +642,11 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
         controller.applyNodeMoved(table, resolvedPosition)
         skipNextGraphSyncRef.current =
           resolvedPosition.x === requestedPosition.x && resolvedPosition.y === requestedPosition.y
+        setLiveCoordinates((currentCoordinates) => {
+          const nextCoordinates = { ...currentCoordinates }
+          delete nextCoordinates[node.id]
+          return nextCoordinates
+        })
         setTables((currentTables) =>
           currentTables.map((currentTable) =>
             currentTable.id === node.id
@@ -550,7 +679,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     }
 
     const nextTableMap = new Map<string, TableModel>()
-    const cells: unknown[] = []
+    const cells: Array<ReturnType<X6Graph['createNode']> | ReturnType<X6Graph['createEdge']>> = []
 
     for (const table of tables) {
       const domainTable = hydrateDomainTable({
@@ -579,7 +708,7 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
     tablesByIdRef.current = nextTableMap
   }, [graphReady, relationships, selectedRelationshipId, selectedTableId, tables, viewMode])
 
-  async function persistSnapshot(nextSnapshot: typeof snapshot) {
+  async function persistSnapshot(nextSnapshot: EditorProjectSnapshot) {
     if (process.env.NODE_ENV === 'test') {
       return
     }
@@ -841,16 +970,20 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
                   Configure relationship
                 </button>
               ) : null}
-              <button
-                className={`modeler-toolbar__button ${
-                  viewMode === ViewMode.Physical
-                    ? 'modeler-toolbar__button--toggle-active'
-                    : 'modeler-toolbar__button--ghost'
-                }`}
+                <button
+                className="modeler-toolbar__switch"
                 type="button"
+                role="switch"
+                aria-checked={viewMode === ViewMode.Physical}
+                aria-label={viewMode === ViewMode.Physical ? 'Physical mode' : 'Logical mode'}
                 onClick={() => void handleToggleViewMode()}
               >
-                {viewMode === ViewMode.Logical ? 'Physical mode' : 'Logical mode'}
+                <span className="modeler-toolbar__switch-track" aria-hidden="true">
+                  <span className="modeler-toolbar__switch-thumb" />
+                </span>
+                <span className="modeler-toolbar__switch-label">
+                  {viewMode === ViewMode.Physical ? 'Physical mode' : 'Logical mode'}
+                </span>
               </button>
               <button
                 className="modeler-toolbar__button modeler-toolbar__button--ghost"
@@ -875,8 +1008,15 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
                 </svg>
               ) : null}
               {tables.map((table) => {
-                const sourcePoint = getRelationshipHandlePoint(table, 'out')
-                const targetPoint = getRelationshipHandlePoint(table, 'in')
+                const liveCoordinate = liveCoordinates[table.id]
+                const tableWithCoordinate = liveCoordinate
+                  ? {
+                      ...table,
+                      coordinate: liveCoordinate,
+                    }
+                  : table
+                const sourcePoint = getRelationshipHandlePoint(tableWithCoordinate, 'out')
+                const targetPoint = getRelationshipHandlePoint(tableWithCoordinate, 'in')
                 const label = resolveSnapshotName(table, viewMode)
                 const showSourceHandle =
                   selectedTableId === table.id || relationshipDrag?.sourceTableId === table.id
@@ -949,24 +1089,54 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
             {process.env.NODE_ENV === 'test' && tables.length > 0 ? (
               <div className="schema-card-layer">
                 {tables.map((table) => (
-                  <article
-                    key={table.id}
-                    className="schema-card"
-                    data-selected={selectedTableId === table.id ? 'true' : 'false'}
-                    onClick={() => {
-                      setSelectedRelationshipId(null)
-                      setSelectedTableId(table.id)
-                    }}
-                  >
-                    <div className="schema-card__header">{resolveSnapshotName(table, viewMode)}</div>
-                    <div className="schema-card__body">
-                      {table.attributes.map((attribute) => (
-                        <div key={attribute.id}>
-                          {resolveAttributeSnapshotName(attribute, viewMode)} {attribute.dataType?.toUpperCase() ?? 'TEXT'}
+                  (() => {
+                    const { primaryKeyRows, attributeRows } = getSnapshotTableSections(table, viewMode)
+
+                    return (
+                      <article
+                        key={table.id}
+                        className="schema-card"
+                        data-selected={selectedTableId === table.id ? 'true' : 'false'}
+                        onClick={() => {
+                          setSelectedRelationshipId(null)
+                          setSelectedTableId(table.id)
+                        }}
+                      >
+                        <div className="schema-card__header">{resolveSnapshotName(table, viewMode)}</div>
+                        <div className="schema-card__body">
+                          {primaryKeyRows.length > 0 ? (
+                            <section className="schema-card__section schema-card__section--keys">
+                              <div className="schema-card__section-title">Primary keys</div>
+                              <div className="schema-card__rows">
+                                {primaryKeyRows.map((row) => (
+                                  <div key={row.id} className="schema-card__row">
+                                    <span className="schema-card__row-name">{row.name}</span>
+                                    <span className="schema-card__row-type">{row.typeLabel}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </section>
+                          ) : null}
+                          {attributeRows.length > 0 ? (
+                            <section className="schema-card__section schema-card__section--columns">
+                              <div className="schema-card__section-title">Attributes</div>
+                              <div className="schema-card__rows">
+                                {attributeRows.map((row) => (
+                                  <div key={row.id} className="schema-card__row">
+                                    <span className="schema-card__row-name">{row.name}</span>
+                                    <span className="schema-card__row-type">{row.typeLabel}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </section>
+                          ) : null}
+                          {primaryKeyRows.length === 0 && attributeRows.length === 0 ? (
+                            <div className="schema-card__empty">No columns yet</div>
+                          ) : null}
                         </div>
-                      ))}
-                    </div>
-                  </article>
+                      </article>
+                    )
+                  })()
                 ))}
               </div>
             ) : null}
@@ -1102,7 +1272,9 @@ export function ModelerWorkspace({ projectId, initialProject }: ModelerWorkspace
             setIsEditingAttributes(false)
             setAttributeDraftTable(null)
           }}
-          onChange={setAttributeDraftTable}
+          onChange={(updater) =>
+            setAttributeDraftTable((currentDraft) => (currentDraft ? updater(currentDraft) : currentDraft))
+          }
           onAddColumn={() =>
             setAttributeDraftTable((currentDraft) =>
               currentDraft

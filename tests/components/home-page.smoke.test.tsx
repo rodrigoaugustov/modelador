@@ -7,5 +7,6 @@ describe('HomePage', () => {
 
     expect(screen.getByRole('heading', { name: /data modeler/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /create project/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /load project/i })).toBeInTheDocument()
   })
 })

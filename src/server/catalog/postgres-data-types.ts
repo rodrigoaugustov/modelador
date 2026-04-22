@@ -1,4 +1,11 @@
-export const postgresDataTypes = [
+type PostgresDataTypeDefinition = {
+  code: string
+  label: string
+  supportsSize: boolean
+  aliases: string[]
+}
+
+export const postgresDataTypes: PostgresDataTypeDefinition[] = [
   { code: 'uuid', label: 'UUID', supportsSize: false, aliases: [] },
   { code: 'varchar', label: 'VARCHAR', supportsSize: true, aliases: ['character varying'] },
   { code: 'numeric', label: 'NUMERIC', supportsSize: true, aliases: ['decimal', 'dec'] },
@@ -6,7 +13,7 @@ export const postgresDataTypes = [
   { code: 'integer', label: 'INTEGER', supportsSize: false, aliases: ['int', 'int4'] },
   { code: 'bigint', label: 'BIGINT', supportsSize: false, aliases: ['int8'] },
   { code: 'boolean', label: 'BOOLEAN', supportsSize: false, aliases: ['bool'] },
-] as const
+]
 
 export function findPostgresDataType(code: string | null | undefined) {
   if (!code) {
